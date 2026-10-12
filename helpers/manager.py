@@ -146,7 +146,7 @@ def filter_check(config):
     embedding(config)
     scanner=PIIFilter(config['pii_filter'])
     missing=sorted(set(scanner.ner_languages)-set(scanner.get_loaded_languages()))
-    if missing:raise ValueError('Name detection unavailable: '+', '.join(missing)+'. Install the selected spaCy models in Agent Zero.')
+    if missing:raise ValueError('Name detection unavailable: '+', '.join(missing)+'. Prepare the models required by the selected local detection backend in Agent Zero.')
     # Required local embeddings must load without making an external model call.
     from sentence_transformers import SentenceTransformer
     model=config['local_embedding']['model']
