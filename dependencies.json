@@ -1,12 +1,12 @@
 {
   "local_privacy_guard": {
-    "version": "1.5.1",
-    "sha256": "38f91910dd26d1cc39f1fcfa30b993669608b60225d6935f5dcad3e8727490bb",
-    "url": "https://github.com/mgr-de/a0-local-privacy-guard/releases/download/v1.5.1/local-privacy-guard-1.5.1.zip"
+    "version": "1.5.2",
+    "sha256": "eef1161fe3d21c17e77e03266c0ca8c7d35480b6e7a7f88485dd08cad1f15aa2",
+    "url": "https://github.com/mgr-de/a0-local-privacy-guard/releases/download/v1.5.2/local-privacy-guard-1.5.2.zip"
   },
   "requesty": {
-    "version": "0.5.2",
-    "sha256": "5890782615a2c84ccae72fbfcb6abed8f462265b68322053e37b65b4a6ebbb56",
-    "url": "https://github.com/mgr-de/a0-requesty-privacy-guard/releases/download/v0.5.2/requesty-privacy-guard-0.5.2.zip"
+    "version": "0.6.0",
+    "sha256": "7649b51f6307a7a90bb271597e672f9ec09cb0831eeba7777c636ddc93d2e49d",
+    "url": "https://github.com/mgr-de/a0-requesty-privacy-guard/releases/download/v0.6.0/requesty-privacy-guard-0.6.0.zip"
   }
 }

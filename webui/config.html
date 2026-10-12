@@ -27,33 +27,38 @@
 <button class="btn" type="button" @click="$store.privacyAgent.action('account',{settings:{...$store.privacyAgent.account}})" :disabled="$store.privacyAgent.busy">Meine Bestätigung speichern</button>
 <p x-text="$store.privacyAgent.status?.account?.confirmed_at ? ($store.privacyAgent.status.account_verification === 'user_confirmed' ? 'Vom Nutzer bestätigt: ' : 'Noch nicht vollständig bestätigt: ')+$store.privacyAgent.status.account.confirmed_at+' · Nicht technisch verifiziert' : 'Kontoeinstellungen nicht verifiziert'"></p>
 </details>
-<fieldset :disabled="$store.privacyAgent.busy || $store.privacyAgent.status?.active"><legend>4 · Modelle und lokale Erkennung</legend>
-<button class="btn" type="button" @click="$store.privacyAgent.action('catalog')" :disabled="!$store.privacyAgent.status?.has_key">Verbindung prüfen und Modelle laden</button>
-<p>Diese Prüfung ruft den Modellkatalog ab. Sie startet keine kostenpflichtige Modellantwort. Es wird kein Modell automatisch ausgewählt.</p>
-<p>Kurze Namen verwenden Requestys Managed Policies. Ihre Katalogangaben müssen dieselben Datenschutzregeln erfüllen. Der EU-Gateway allein reicht dafür nicht. Eigene Policies mit ungeprüften Zielen bleiben gesperrt.</p>
-<label><input type="checkbox" x-model="$store.privacyAgent.showProviders"> Anbieterspezifische Modelle anzeigen</label>
-<div class="field"><div class="field-label"><label class="field-title" for="privacy-agent-main">Gesprächsmodell</label></div><div class="field-control"><select id="privacy-agent-main" x-model="$store.privacyAgent.main" :disabled="!$store.privacyAgent.loaded"><option value="">Modell wählen</option><template x-if="!$store.privacyAgent.loaded && $store.privacyAgent.main"><option :value="$store.privacyAgent.main" :selected="true" x-text="$store.privacyAgent.main"></option></template><template x-for="m in $store.privacyAgent.choices()" :key="m.id"><option :value="m.id" :selected="m.id === $store.privacyAgent.main" x-text="m.id"></option></template></select></div></div>
-<div class="field"><div class="field-label"><label class="field-title" for="privacy-agent-utility">Hilfsmodell</label></div><div class="field-control"><select id="privacy-agent-utility" x-model="$store.privacyAgent.utility" :disabled="!$store.privacyAgent.loaded"><option value="">Modell wählen</option><template x-if="!$store.privacyAgent.loaded && $store.privacyAgent.utility"><option :value="$store.privacyAgent.utility" :selected="true" x-text="$store.privacyAgent.utility"></option></template><template x-for="m in $store.privacyAgent.choices()" :key="m.id"><option :value="m.id" :selected="m.id === $store.privacyAgent.utility" x-text="m.id"></option></template></select></div></div>
-<div class="field"><div class="field-label"><label class="field-title" for="privacy-agent-vision">Bildmodell</label></div><div class="field-control"><select id="privacy-agent-vision" x-model="$store.privacyAgent.vision" :disabled="!$store.privacyAgent.loaded"><option value="">Modell wählen</option><template x-if="!$store.privacyAgent.loaded && $store.privacyAgent.vision"><option :value="$store.privacyAgent.vision" :selected="true" x-text="$store.privacyAgent.vision"></option></template><template x-for="m in $store.privacyAgent.choices(true)" :key="m.id"><option :value="m.id" :selected="m.id === $store.privacyAgent.vision" x-text="m.id"></option></template></select></div></div>
-<details><summary>Erweiterte Einstellungen: Sprachen und ausgeschlossene Modelle</summary>
-<p>Englisch wird immer benötigt. Weitere Sprachen benötigen ihre lokalen spaCy-Erkennungsmodelle. Ohne erforderliche Modelle wird die Aktivierung abgelehnt.</p>
-<template x-for="lang in ['de','fr','es','it','nl','pl']" :key="lang"><label style="margin-right:1rem"><input type="checkbox" :value="lang" x-model="$store.privacyAgent.languages"><span x-text="lang"></span></label></template>
-<template x-for="m in $store.privacyAgent.models.filter(m=>!m.allowed)" :key="m.id"><p x-text="m.id+': '+m.reasons.join(' ')"></p></template>
-</details>
-<p>Falls lokale Erkennungsmodelle oder Embedding-Gewichte fehlen, können sie hier von spaCy und Hugging Face heruntergeladen werden. Es werden keine Chatdaten übertragen und kein lokaler Chat-LLM benötigt.</p>
-<button class="btn" type="button" @click="$store.privacyAgent.action('prepare_local',{languages:[...$store.privacyAgent.languages]})">Lokale Erkennung vorbereiten</button>
-<button class="btn" type="button" @click="$store.privacyAgent.configure()" :disabled="!$store.privacyAgent.loaded || !$store.privacyAgent.main || !$store.privacyAgent.utility || !$store.privacyAgent.vision">Lokale Komponenten prüfen und Einrichtung speichern</button>
+<fieldset :disabled="$store.privacyAgent.busy"><legend>4 · Native A0-Presets</legend>
+<p>Default, Efficiency und Power werden auf Requesty umgestellt. Modelle danach wie gewohnt in A0 bearbeiten; der Schutz bleibt dabei aktiv.</p>
+<p x-show="$store.privacyAgent.status?.native_presets">Migration abgeschlossen. Die Modellwahl stammt ausschließlich aus den nativen A0-Presets.</p>
+<p x-text="'Aktives globales Preset: '+($store.privacyAgent.status?.preset_name || 'noch nicht eingerichtet')"></p>
+<button class="btn" type="button" @click="$store.privacyAgent.loadMigration()" :disabled="!$store.privacyAgent.status?.has_key || $store.privacyAgent.status?.native_presets">Umstellung ansehen</button>
+<template x-if="$store.privacyAgent.preview"><div>
+<p>Vorschau: Sol und Opus können deutlich mehr kosten. Die Prüfung lädt nur Katalogangaben, keine Modellantworten.</p>
+<label><input type="checkbox" x-model="$store.privacyAgent.preserveCurrent" @change="$store.privacyAgent.loadMigration()"> Meine bisherige ausdrücklich gewählte Einrichtung als eigenes Preset erhalten und ausgewählt lassen</label>
+<label><input type="checkbox" x-model="$store.privacyAgent.showProviders"> Anbieterspezifische Modell-IDs anzeigen</label>
+<template x-for="row in $store.privacyAgent.rows" :key="row.name"><section class="privacy-card">
+<h3 x-text="row.name"></h3><p x-text="$store.privacyAgent.preview.cost_categories?.[row.name] || 'Individuelles Preset'"></p>
+<template x-for="role in ['main','utility','vision']" :key="role"><div class="field"><div class="field-label"><label class="field-title" :for="'privacy-preset-'+$store.privacyAgent.rows.indexOf(row)+'-'+role" x-text="role+' – '+row.name"></label></div><div class="field-control"><select :id="'privacy-preset-'+$store.privacyAgent.rows.indexOf(row)+'-'+role" x-model="row[role]"><option value="" x-text="role==='vision' ? 'Main-Modell für Bilder nutzen' : 'Modell wählen'"></option><template x-for="model in $store.privacyAgent.choices(role==='vision')" :key="model.id"><option :value="model.id" :selected="model.id===row[role]" x-text="model.id"></option></template></select></div></div></template>
+</section></template>
+<template x-for="error in $store.privacyAgent.preview.blocked" :key="error.name"><p role="alert" x-text="error.name+': '+error.reason"></p></template>
+<p>Andere bestehende Presets bleiben erhalten. Nicht zulässige Presets können unter aktivem Schutz nicht verwendet werden.</p>
+<button class="btn" type="button" @click="$store.privacyAgent.refreshMigration()">Meine Auswahl erneut prüfen</button>
+<button class="btn" type="button" @click="$store.privacyAgent.applyMigration()" :disabled="!$store.privacyAgent.migrationCurrent() || $store.privacyAgent.preview.blocked.length">Geprüfte Umstellung mit Sicherung übernehmen</button>
+</div></template>
+<details><summary>Lokale Erkennung und Sprachen</summary><p>Englisch wird immer benötigt; weitere Sprachen benötigen ihre lokalen spaCy-Modelle.</p>
+<template x-for="lang in ['de','fr','es','it','nl','pl']" :key="lang"><label><input type="checkbox" :value="lang" x-model="$store.privacyAgent.languages"><span x-text="lang"></span></label></template>
+<button class="btn" type="button" @click="$store.privacyAgent.action('prepare_local',{languages:[...$store.privacyAgent.languages]})">Lokale Erkennung vorbereiten</button></details>
 </fieldset>
 <fieldset :disabled="$store.privacyAgent.busy"><legend>5 · Installation schützen</legend>
 <p>Alle Profile erben EU-Modellregeln, lokale Textmaskierung und lokale Embeddings. Eigene Einstellungen dürfen diese Mindestregeln nicht abschwächen. Unzulässige Presets blockieren Modellaufrufe.</p>
 <label><input type="checkbox" x-model="$store.privacyAgent.confirmAll"> Ich möchte alle bestehenden und künftigen Profile dieser Installation schützen.</label>
 <button class="btn" type="button" @click="$store.privacyAgent.activate()" :disabled="!$store.privacyAgent.confirmAll || !$store.privacyAgent.configurationCurrent() || $store.privacyAgent.status?.active">Diese Installation schützen</button>
-<p x-show="!$store.privacyAgent.configurationCurrent()">Die ausgewählten Modelle und Sprachen zuerst prüfen und speichern. Änderungen sind noch nicht aktiv.</p>
+<p x-show="!$store.privacyAgent.configurationCurrent()">Native Presets zuerst prüfen und mit Sicherung übernehmen. Erst anschließend den installationsweiten Schutz aktivieren.</p>
 </fieldset>
 <h3>Schutzstatus und Grenzen</h3>
 <p x-text="$store.privacyAgent.status?.active ? 'Modellroute: EU-Requesty-Anforderungen aktiv. Textfilter: lokale Maskierung und Secret-Blockierung vorgeschrieben. Embeddings: lokal vorgeschrieben.' : 'Installationsweite Regeln inaktiv. Der Schutz einzelner Profile hängt von deren eigener Einrichtung ab.'"></p>
 <p x-text="'Gemeinsame Modelle: Main '+($store.privacyAgent.status?.models?.chat?.name || 'nicht eingerichtet')+' · Utility '+($store.privacyAgent.status?.models?.utility?.name || 'nicht eingerichtet')+' · Vision '+($store.privacyAgent.status?.models?.vision?.name || 'nicht eingerichtet')"></p>
-<p>Profilmodelle und aktuelle Presets können abweichen; die tatsächlichen Modelle und Ablehnungsgründe stehen im Chat-Schutzstatus.</p>
+<p>Modelle und aktive Presets stehen im nativen Chat-Menü und A0-Preset-Editor. Nicht zulässige Änderungen werden vor dem Speichern abgelehnt.</p>
 <p>Bilder werden beim ausgewählten Dienst verarbeitet. Die lokale Textmaskierung schützt ihren Bildinhalt nicht.</p>
 <p>Webseiten, Formulare, Uploads und andere Werkzeugübertragungen werden nicht vollständig überwacht. Browserfunktionen bleiben verfügbar. Eine zugelassene Modellroute ist keine Freigabe einer Webseite.</p>
 <p>Keine vollständige Anonymisierung oder Rechtssicherheitsgarantie. Host-Administratoren und fremde Netzwerkclients liegen außerhalb dieser Plugin-Grenze.</p>

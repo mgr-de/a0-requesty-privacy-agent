@@ -2,7 +2,7 @@
 
 # Requesty Privacy Agent für Agent Zero 2.13
 
-Ein gemeinsamer Einstieg für EU-Privatanwender: Requesty-Routen, lokale Textmaskierung und lokale Embeddings einmal einrichten und als Mindestregeln für **alle Profile dieser Installation** verwenden. Version 0.1.0 ist eine erste überprüfbare Einführung, keine vollständige Sicherheits-Sandbox.
+Ein gemeinsamer Einstieg für EU-Privatanwender: Requesty-Routen, lokale Textmaskierung und lokale Embeddings einmal einrichten und als Mindestregeln für **alle Profile dieser Installation** verwenden. Version 0.2 verwendet native A0-Presets und ist keine vollständige Sicherheits-Sandbox.
 
 Die bestehenden [Requesty](https://github.com/mgr-de/a0-requesty-privacy-guard) und [Local Privacy Guard](https://github.com/mgr-de/a0-local-privacy-guard) Plugins bleiben erhalten und einzeln nutzbar. Dieser Manager verwendet ihre Filter und Modellprüfung, statt sie zu kopieren.
 
@@ -11,8 +11,8 @@ Die bestehenden [Requesty](https://github.com/mgr-de/a0-requesty-privacy-guard) 
 1. ZIP über den nativen Agent-Zero-Installer installieren, Config öffnen. Installation allein aktiviert noch keine gemeinsame Policy.
 2. Fehlende Komponenten installieren: fest gepinnte veröffentlichte ZIPs werden vor dem nativen Installer per SHA-256 geprüft. Vorhandene kompatible Plugins bleiben erhalten; ältere Versionen bewusst über die native Plugin-Verwaltung aktualisieren. Agent Zero neu starten.
 3. Einen gemeinsamen Requesty-Schlüssel speichern. Optional die Requesty-Kontoeinstellungen in Requesty setzen und als **vom Nutzer bestätigt** vermerken. Das ist keine technische Kontoverifikation.
-4. Den Modellkatalog laden und Main, Utility sowie ein bildfähiges Vision-Modell bewusst auswählen. Es werden keine Modelle automatisch ausgewählt und keine Modellantworten für diese Katalogprüfung angefordert. Gegebenenfalls lokale spaCy-Modelle und Embedding-Gewichte vorbereiten; hierfür werden nur Modellpakete heruntergeladen, keine Chatdaten übertragen. Kein lokaler Chat-LLM ist erforderlich.
-5. Lokale Komponenten prüfen und die Einrichtung speichern. Erst danach **„Diese Installation schützen“** ausdrücklich bestätigen. Die Aktion betrifft alle bestehenden und neuen Profile; andere Installationen bleiben unverändert.
+4. Die Umstellung von Default, Efficiency und Power ansehen, Modelle und Kosten prüfen und ausdrücklich übernehmen. Vorbelegungen starten keine Modellaufrufe; fehlende Modelle verlangen eine Ersatzwahl. Eine bisherige gemeinsame Auswahl kann als eigenes natives Preset erhalten bleiben. Gegebenenfalls lokale Erkennungsmodelle und Embedding-Gewichte vorbereiten; hierbei werden Pakete heruntergeladen, keine Chatdaten übertragen. Kein lokaler Chat-LLM ist erforderlich.
+5. Nach geprüfter Migration **„Diese Installation schützen“** ausdrücklich bestätigen. Die Aktion betrifft alle bestehenden und neuen Profile; andere Installationen bleiben unverändert. Anschließend Modelle über den normalen A0-Preset-Editor bearbeiten, ohne den Schutz abzuschalten.
 
 Die nummerierten Aktionen speichern und prüfen die Einrichtung. Der allgemeine native Save-Knopf aktiviert den Schutz nicht.
 
@@ -63,6 +63,17 @@ Der authentifizierte `/v1/models`-Katalog muss zuerst erfolgreich geladen werden
 
 ## Privacy-Auswahl im Chat und Profil-Editor
 
-Das Chat-Menü zeigt die geprüfte gespeicherte Einrichtung als eigene Auswahl: „Privacy Agent · gemeinsam“ bei gemeinsamer Basis, sonst „Requesty · Profileinrichtung“. Sie kehrt über die native Funktion zur scoped configuration zurück, statt ein künstliches globales Preset zu speichern. Alte globale Presets bleiben erhalten und werden separat geprüft. Die ausgewählte Privacy-Basis ist als aktiv erkennbar; unzulässige Chat-Presets bleiben gesperrt. Globale Modelleinstellungen und Profil-Editor erklären die effektive Privacy-Route.
+Nach der Migration zeigen Chat-Menü, Profil-Editor und Preset-Editor dieselben nativen Presets. Der frühere zusätzliche Menüeintrag „Privacy Agent · gemeinsam“ entfällt. Die native Auswahl für Chat, Profil, Projekt und globale Vorgabe bestimmt die tatsächlich verwendeten Modelle; unzulässige Presets bleiben gesperrt. Noch nicht migrierte ältere Einrichtungen behalten ihren bisherigen Menüeintrag bis zur ausdrücklichen Umstellung.
 
 Der native Profil-Editor verwendet Lesekontexte ohne Chat-ID. Diese erhalten ihre eigene Profilkonfiguration, ohne Parent-Chat-Suche, Rücksetzen von Chat-Auswahlen oder Zugriff auf fremde Chat-Zuordnungen. Native Regressionen decken Editoröffnung sowie eine geprüfte gemeinsame Menüauswahl ohne Schlüsselwerte im API-Ergebnis ab.
+
+
+## Native Requesty-Presets (Privacy Agent 0.2)
+
+Der aktivierte Manager kann nach ausdrücklicher Migrationsvorschau A0s Default, Efficiency und Power auf geprüfte Requesty-EU-Modelle umstellen. Native Presets sind anschließend die einzige Quelle für Main, Utility und Vision; die Privacy-Policy und Schlüssel bleiben getrennt. Zulässige Modelländerungen im normalen A0-Preset-Editor erfordern keine Abschaltung. Der Provider ist Requesty, Embeddings bleiben auf dem eingerichteten lokalen Modell. Kurze Managed-Namen und mit einer Anbieterpräfix-Suche spezifische IDs bleiben möglich.
+
+Neue Einrichtungen starten mit Default (Sol/Luna); Efficiency verwendet GLM/DeepSeek mit separatem DeepSeek-Vision-Modell, Power Opus/Luna. Diese Vorbelegung startet keine kostenpflichtigen Modelltests. Jede Migration validiert den aktuellen Katalog und verlangt Ersatz für fehlende Standardmodelle. Eine bereits ausdrücklich gewählte gemeinsame Einrichtung kann als eigenes natives Preset erhalten und ausgewählt bleiben. Vorhandene aktive Profilsetups werden als native Profil-Presets übertragen; Schlüssel werden nicht in Presets kopiert. Andere individuelle Presets bleiben erhalten, unzulässige davon gesperrt.
+
+Sicherungen liegen ausschließlich lokal unter usr/privacy-agent/preset-backups. Veraltete Vorschauen werden abgelehnt. Eine fehlgeschlagene Übernahme stellt die vorherigen Presets und Zuordnungen wieder her. Die separate Wiederherstellung ist nach zentraler Deaktivierung möglich und verweigert das Überschreiben späterer Änderungen. Updates migrieren oder überschreiben Presets nicht automatisch. Erst nach Vorbereitung der Komponenten, bestätigter Migration und expliziter Aktivierung gelten die installationsweiten Regeln.
+
+Die nativen Speicher- und Auswahladapter werden beim A0-Start eingerichtet, sind reversibel und verändern keine A0-Kerndateien. Direkte API-Eingaben werden ebenfalls geprüft; alte Modellwrapper mit abweichender Modellwahl müssen neu aufgebaut werden. Ohne Manager bleibt das eigenständige Verhalten dieses Plugins erhalten. Bildinhalte und beliebige Werkzeugübertragungen bleiben außerhalb der lokalen Textmaskierung.
