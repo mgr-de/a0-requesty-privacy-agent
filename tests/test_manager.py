@@ -235,3 +235,25 @@ def test_activation_validates_all_slots_before_committing_marker(setup,monkeypat
     metadata['supports_vision']=True;m.activate()
     assert m.active() and installed==[True]
     m.deactivate('DISABLE_INSTANCE_PROTECTION')
+
+
+def test_native_profile_editor_without_chat_id_and_scoped_menu_choice(setup,monkeypatch):
+    import asyncio
+    from plugins._agent_editor.helpers.editor import build_editor_state
+    from usr.plugins.requesty.helpers import catalog
+    from usr.plugins.requesty.api.presets import Presets
+    from agent import Agent,AgentConfig
+    m,scope,path=setup
+    identifier='bedrock/synthetic@eu-central-1'
+    config={'provider':'requesty_guarded','name':identifier,'api_base':'https://router.eu.requesty.ai/v1','ctx_length':10000,'vision':True,'kwargs':{}}
+    m.write('setup.json',{'active':True,'models':{slot:dict(config) for slot in ('chat','utility','vision')}})
+    monkeypatch.setattr(scope,'key',lambda owner:'SYNTHETIC-SECRET')
+    monkeypatch.setattr(catalog,'fetch',lambda *args,**kwargs:{identifier:{'id':identifier,'api':'chat','geolocation':'eu','data_retention':False,'data_used_for_training':False,'context_window':10000,'supports_vision':True}})
+    state=build_editor_state('agent0')
+    assert state['profile']['id']=='agent0'
+    a=Agent(0,AgentConfig(profile='agent0',mcp_servers=''))
+    result=asyncio.run(Presets(None,None).process({'context_id':a.context.id},None))
+    assert result['scoped']['allowed'],result['scoped']['reasons']
+    assert result['scoped']['name']=='Privacy Agent · gemeinsam'
+    assert result['scoped']['models']['main']['name']==identifier
+    assert 'SYNTHETIC-SECRET' not in json.dumps(result)
