@@ -1,0 +1,11 @@
+# Native Presets · geprüfte Einführung 12. Oktober 2026
+
+Default, Efficiency und Power sind echte globale A0-Presets. Die ausdrückliche Migration prüft den Requesty-Katalog, sichert Originalpresets und Auswahlreferenzen lokal und behält bestehende gemeinsame Modellentscheidungen auf Wunsch als eigenes natives Preset. Die Plugin-Installation und Updates führen keine automatische Migration aus. Nicht migrierte individuelle Presets bleiben erhalten und werden unter aktivem Schutz bei Auswahl geprüft.
+
+Main, Utility und Vision werden im nativen Editor bearbeitet. Anbieterlisten zeigen Requesty; Embeddings bleiben auf dem eingerichteten lokalen HuggingFace-Modell. Schlüssel werden zentral oder im Requesty-Profil eingerichtet, nicht im Preset. Leere native Transportfelder und reguläre A0-Kontrollfelder werden akzeptiert; fremde Anbieter, Transportparameter und nicht geprüfte Modelle werden vor Speicherung oder Versand abgelehnt. Der Manager hält keine konkurrierende Modellkopie mehr vor.
+
+Die Git-Testinstallation wurde über den nativen Git-Aktualisierungsweg aktualisiert und über die Oberfläche migriert. Ihre bisherige günstige DeepSeek-Auswahl blieb aktiv. Im Chat-Menü und Preset-Editor erschienen die drei Standardpresets sowie das erhaltene DeepSeek-Preset. Eine zulässige Utility-Modelländerung wurde bei aktivem Schutz im nativen Editor gespeichert. Lokale Embeddings wurden mit vorhandenen Gewichten im Offline-Modus geprüft. Diese Abnahme erzeugte keine kostenpflichtigen Modellantworten.
+
+39 Manager-Python-Regressionen decken unter anderem frische Einrichtung, Wiederholung, veraltete Vorschau, Sicherung und Rücknahme, bestehende Profilkeys, alte Wrapper, direkte Auswahl-APIs, Vision und den nativen Editor-Speicherfall ab. Die eigenständigen Komponenten bleiben separat geprüft. Simulierte Transportprüfungen sind kein Nachweis einer tatsächlichen Ausführung beim Anbieter. Die bestehenden Bild- und Werkzeuggrenzen bleiben erhalten.
+
+Version 0.2.1 ergänzt die im Browsertest gefundenen Integrationskorrekturen: eine boolesche Übernahmefreigabe, Metadaten für den nativen Preset-Editor, eine verständliche Requesty-Anzeige, lokal begrenzte Embedding-Anbieter und Unterstützung der tatsächlich vom Editor erzeugten neutralen Felder. A0-Kerndateien werden nicht verändert.

@@ -33,3 +33,8 @@ test('migration needs current explicit model and language review before applying
 test('native preset mode remains editable without switching off protection',()=>{
  const store=setup(async()=>({ok:true}));store.status={native_presets:true,active:true};assert.equal(store.configurationCurrent(),true);
 });
+test('migration submit disabled binding returns a boolean for zero blockers',async()=>{
+ const html=await readFile(new URL('../webui/config.html',import.meta.url),'utf8');
+ assert.match(html,/preview\.blocked\.length>0/);
+ assert.doesNotMatch(html,/x-model="row\[role\]"/);
+});

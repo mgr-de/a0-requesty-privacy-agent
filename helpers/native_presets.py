@@ -64,16 +64,29 @@ def validate(preset, available=None, profile_policy=None):
         if entry.get('supports_tool_calling') is not True:raise ValueError(role+': Tool support is unverified.')
         if role=='vision' and entry.get('supports_vision') is not True:raise ValueError('Vision support is unverified.')
         if role=='chat' and bool(conf.get('vision'))!=(entry.get('supports_vision') is True):raise ValueError('Set Supports Vision to the catalog-confirmed capability.')
+        native_fields={'provider','name','api_base','api_key','ctx_length','ctx_input','ctx_history','vision','rl_requests','rl_input','rl_output','kwargs'}
+        if role=='chat':native_fields.add('max_embeds')
+        if role=='vision':native_fields.update({'max_embeds','timeout','max_tokens','override_main'})
+        unexpected=set(conf)-native_fields
+        if unexpected:
+            labels=', '.join(sorted(field for field in unexpected if re.fullmatch('[a-z_]{1,30}',field)))
+            raise ValueError(role+': Unsupported native model fields'+(' ('+labels+')' if labels else '')+'. Custom transport fields are not allowed.')
         try:
-            configuration=models.ModelConfig(type=models.ModelType.CHAT,**deepcopy(conf))
+            configuration=models.ModelConfig(type=models.ModelType.CHAT,provider=conf['provider'],name=conf['name'],
+                api_key=conf.get('api_key') or '',api_base=conf.get('api_base') or '',kwargs=deepcopy(conf.get('kwargs') or {}))
             options=configuration.build_kwargs()
         except Exception:raise ValueError('Invalid model settings. Check context size and advanced parameters.') from None
         if options.get('api_key'):raise ValueError('Store keys centrally or per profile, never inside preset parameters.')
         if not options.get('api_base'):options['api_base']=policy.endpoint
         validate_model_parameters(options,policy)
     if preset.get('embedding')!=embedding():
-        # Native cleaning drops an empty kwargs object.
+        # Native editor preserves empty transport fields and rate controls.
+        # They are harmless locally; nonempty transport options remain forbidden.
         clean=deepcopy(preset.get('embedding',{}));clean.setdefault('kwargs',{})
+        for field in ('api_base','api_key'):
+            if clean.get(field) in (None,''):clean.pop(field,None)
+        for field in ('rl_requests','rl_input'):
+            if field in clean and type(clean[field]) in (int,float) and clean[field]>=0:clean.pop(field)
         if clean!=embedding():raise ValueError('Use the configured local embedding model without custom transport parameters.')
 
 def fingerprint(value):return hashlib.sha256(json.dumps(value,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
