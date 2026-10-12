@@ -1,8 +1,8 @@
 {
   "local_privacy_guard": {
-    "version": "1.7.2",
-    "sha256": "a6bb091772bfdb6e2734502153c337f1af6ff44045f5488a3106ac2374cad364",
-    "url": "https://github.com/mgr-de/a0-local-privacy-guard/releases/download/v1.7.2/local-privacy-guard-1.7.2.zip"
+    "version": "1.7.3",
+    "sha256": "bacf6afc50efaa111c5623ebc7c2166eb154a967907aa4874192d034dc8d651b",
+    "url": "https://github.com/mgr-de/a0-local-privacy-guard/releases/download/v1.7.3/local-privacy-guard-1.7.3.zip"
   },
   "requesty": {
     "version": "0.6.0",
