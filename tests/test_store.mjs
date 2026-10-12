@@ -17,3 +17,9 @@ test('catalog never selects a model or invokes paid model validation',async()=>{
 test('credentials are cleared and catalog invalidated after saving',async()=>{
  const store=setup(async()=>({ok:true,has_key:true}));store.key='SYNTHETIC';store.loaded=true;await store.action('key',{key:store.key});assert.equal(store.key,'');assert.equal(store.loaded,false);
 });
+
+test('short model list preserves explicit selections and has a provider switch',()=>{
+ const store=setup(async()=>({ok:true}));store.models=['short','vendor/short','other/short'].map(id=>({id,allowed:true,supports_tool_calling:true,supports_vision:true}));
+ store.main='vendor/short';assert.deepEqual(Array.from(store.choices(),m=>m.id),['short','vendor/short']);
+ store.showProviders=true;assert.equal(store.choices().length,3);
+});

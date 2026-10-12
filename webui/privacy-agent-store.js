@@ -7,7 +7,12 @@ export const store=createStore('privacyAgent',{
     account:{eu_gateway:false,requesty_zdr:false,provider_zdr:false,approved_eu_models:false},
     cleanup(){this.epoch++;this.key='';this.busy=false;this.models=[];this.loaded=false;this.confirmAll=false;this.confirmDisable=false;},
     async open(){this.cleanup();await this.action('status');},
-    choices(vision=false){return this.models.filter(m=>m.allowed&&(!vision||m.supports_vision===true)&&m.supports_tool_calling===true);},
+    showProviders:false,
+    choices(vision=false){
+        const eligible=this.models.filter(m=>m.allowed&&(!vision||m.supports_vision===true)&&m.supports_tool_calling===true);
+        const hasShort=eligible.some(m=>!m.id.includes('/'));
+        return eligible.filter(m=>this.showProviders||!hasShort||!m.id.includes('/')||[this.main,this.utility,this.vision].includes(m.id));
+    },
     configurationCurrent(){
         const models=this.status?.models;
         const languages=this.status?.local?.pii_filter?.languages;
