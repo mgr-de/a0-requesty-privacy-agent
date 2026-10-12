@@ -89,6 +89,12 @@ def install():
             return [{'value':'requesty_guarded','label':'Requesty'}] if n.enabled() else original(*args,**kwargs)
         return checked
     bind(mc,'get_chat_providers',providers_factory)
+    def embedding_providers_factory(original):
+        @wraps(original)
+        def checked(*args,**kwargs):
+            return [{'value':'huggingface','label':'Local HuggingFace'}] if n.enabled() else original(*args,**kwargs)
+        return checked
+    bind(mc,'get_embedding_providers',embedding_providers_factory)
 
     def config_factory(original):
         @wraps(original)
@@ -145,6 +151,8 @@ def install():
                         if '/' not in query and any('/' not in name for name in allowed):allowed=[name for name in allowed if '/' not in name]
                         return {'models':sorted(name for name in allowed if query in name.lower()),'source':'requesty_privacy_catalog','provider':'requesty_guarded','error':''}
                     result=await original(self,input,request)
+                    if kind=='presets' and isinstance(result,dict):
+                        result['privacy_presets']={'active':True,'key_source':'Central Requesty key; an explicitly configured profile key takes precedence.'}
                     if kind=='config' and isinstance(result,dict):
                         result['chat_providers']=[{'value':'requesty_guarded','label':'Requesty'}]
                         result['embedding_providers']=[{'value':'huggingface','label':'Local HuggingFace'}]

@@ -1,6 +1,9 @@
 // Native fields remain editable; provider and key ownership are policy-owned.
 let active=false,observer=null;
 function decorate(){
+    if(active)for(const label of document.querySelectorAll('.model-switcher-model-value span[x-text$=".provider"]')){
+        if(label.textContent==='requesty_guarded')label.textContent='Requesty';
+    }
     for(const select of document.querySelectorAll('select[x-model="model.provider"]')){
         const root=select.closest('[x-data]');
         if(!root)continue;
@@ -12,7 +15,7 @@ function decorate(){
             }
             let note=root.querySelector('.privacy-preset-key-source');
             if(!note){note=document.createElement('p');note.className='privacy-preset-key-source';note.textContent='Requesty ist durch Privacy Agent festgelegt. Schlüssel: zentral eingerichtet; ein eigener Profilschlüssel hat Vorrang. Modelle hier wie gewohnt auswählen, auch bei aktivem Schutz. Für eine anbieterspezifische Modell-ID mit einem Anbieterpräfix und / suchen.';root.append(note);}
-            for(const key of root.querySelectorAll('input[type="password"]')){
+            for(const key of [...root.querySelectorAll('input')].filter(input=>input.type==='password'||input.getAttribute(':value')?.includes('apiKeyValues'))){
                 if(!key.hasAttribute('data-privacy-key'))key.dataset.privacyKey=String(key.disabled);
                 key.disabled=true;
             }

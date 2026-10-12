@@ -215,3 +215,16 @@ def test_direct_embedding_and_catalog_routes_cannot_leave_local_processing(nativ
     assert result.status_code==400
     result=asyncio.run(ModelSearch(None,None).process({'provider':'huggingface','model_type':'embedding'},None))
     assert result['models']==[n.embedding()['name']]
+
+def test_native_editor_empty_embedding_fields_do_not_block_valid_model_edits(native):
+    migrate(native)
+    from plugins._model_config.api.model_presets import ModelPresets
+    presets=deepcopy(mc.get_presets())
+    presets[0]['embedding'].update(api_base='',rl_requests=0,rl_input=0)
+    presets[0]['chat']['max_embeds']=10
+    presets[1]['utility']['name']='gpt-6-luna@eu'
+    response=asyncio.run(ModelPresets(None,None).process({'action':'save','presets':presets},None))
+    assert isinstance(response,dict),response.get_data(as_text=True)
+    assert response['ok'] and mc.resolve_preset('Efficiency')['utility']['name']=='gpt-6-luna@eu'
+    assert response['privacy_presets']['active']
+    assert mc.get_embedding_providers()==[{'value':'huggingface','label':'Local HuggingFace'}]
