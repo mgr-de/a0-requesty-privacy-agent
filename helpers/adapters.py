@@ -11,6 +11,7 @@ def sources():
         signature='    async def execute(self,data=None,**kwargs):\n' if asynchronous else '    def execute(self,data=None,**kwargs):\n'
         return header+signature+''.join('        '+line+'\n' for line in (prelude+code).splitlines())
     files={
+        '_functions/initialize/initialize_job_loop/start/_00_privacy_agent_presets.py':body("if manager.read('setup.json',{}).get('native_presets'):\n    from usr.plugins.requesty_privacy_agent.helpers import preset_bridge\n    preset_bridge.install()"),
         '_functions/models/get_chat_model/end/_00_privacy_agent_legacy.py':body('manager.install_legacy_bridge()'),
         '_functions/helpers/plugins/get_plugin_config/end/_89_privacy_agent_config.py':body('manager.apply_model_config(data,self.agent)'),
         '_functions/helpers/plugins/delete_plugin/start/_00_privacy_agent_required.py':body("name=data['args'][0] if data.get('args') else data.get('kwargs',{}).get('plugin_name')\nif name in {'requesty','local_privacy_guard','requesty_privacy_agent'}:raise ValueError('Deactivate Privacy Agent centrally before removing required plugins.')"),

@@ -23,3 +23,13 @@ test('short model list preserves explicit selections and has a provider switch',
  store.main='vendor/short';assert.deepEqual(Array.from(store.choices(),m=>m.id),['short','vendor/short']);
  store.showProviders=true;assert.equal(store.choices().length,3);
 });
+
+test('migration needs current explicit model and language review before applying',async()=>{
+ const calls=[];const store=setup(async(path,input)=>{calls.push(input.action);return {ok:true,preview:{presets:[{name:'Default',chat:{provider:'requesty_guarded',name:'main'},utility:{name:'utility'},vision:{}}],blocked:[],fingerprint:'snapshot'}};});
+ await store.action('migration_preview');assert.equal(store.migrationCurrent(),true);
+ store.rows[0].main='changed';assert.equal(store.migrationCurrent(),false);await store.applyMigration();assert.deepEqual(calls,['migration_preview']);
+ store.reviewed=JSON.stringify({overrides:store.overrides(),preserve:store.preserveCurrent,languages:store.languages});store.languages=['en'];assert.equal(store.migrationCurrent(),false);
+});
+test('native preset mode remains editable without switching off protection',()=>{
+ const store=setup(async()=>({ok:true}));store.status={native_presets:true,active:true};assert.equal(store.configurationCurrent(),true);
+});

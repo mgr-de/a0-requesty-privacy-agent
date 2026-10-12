@@ -11,6 +11,16 @@ class Setup(ApiHandler):
                     if command=='key':manager.save_key(input.get('key'))
                     elif command=='catalog':return {'ok':True,'models':manager.model_catalog()}
                     elif command=='configure':manager.configure(input.get('configuration'))
+                    elif command=='migration_preview':
+                        from usr.plugins.requesty_privacy_agent.helpers.native_presets import preview
+                        return {'ok':True,'preview':preview(input.get('overrides'),input.get('preserve_current',True))}
+                    elif command=='migration_apply':
+                        from usr.plugins.requesty_privacy_agent.helpers.native_presets import apply
+                        receipt=apply(input.get('fingerprint'),input.get('overrides'),input.get('preserve_current',True),input.get('languages'))
+                        return {'ok':True,'receipt':receipt,**manager.public_status()}
+                    elif command=='migration_restore':
+                        from usr.plugins.requesty_privacy_agent.helpers.native_presets import restore
+                        return {'ok':True,**restore(input.get('backup_id'))}
                     elif command=='prepare_local':manager.prepare_local(input.get('languages'))
                     elif command=='activate':
                         if input.get('confirm_all_profiles') is not True:raise ValueError('Confirm that all existing and future profiles will be affected.')

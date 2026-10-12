@@ -11,7 +11,7 @@ import threading
 LOCK=threading.RLock()
 SHARED=('', 'privacy_agent_shared')
 MINIMUM={'region':'eu','strict_region':True,'no_retention':True,'no_training':True,'require_requesty_zdr':False}
-MIN_VERSIONS={'requesty':(0,5,2),'local_privacy_guard':(1,5,1)}
+MIN_VERSIONS={'requesty':(0,6,0),'local_privacy_guard':(1,5,2)}
 
 def directory():
     from helpers import files
@@ -74,8 +74,12 @@ def require_components():
         raise ValueError('Privacy Agent requires compatible Requesty and Local Privacy Guard plugins. Install or restore its components.')
     from usr.plugins.requesty.helpers import runtime_guard
     from usr.plugins.local_privacy_guard.helpers import model_guard
-    if getattr(runtime_guard,'INSTANCE_API_VERSION',None)!=1 or getattr(model_guard,'INSTANCE_API_VERSION',None)!=1:
+    if getattr(runtime_guard,'INSTANCE_API_VERSION',None)!=2 or getattr(model_guard,'INSTANCE_API_VERSION',None)!=1:
         raise ValueError('Restart Agent Zero after updating the privacy components before activating Privacy Agent.')
+    if read('setup.json',{}).get('native_presets') and active():
+        from . import preset_bridge
+        preset_bridge.install()
+        if not preset_bridge.healthy():raise ValueError('Restore the native preset validation bridge before using external models.')
 
 def effective_policy(profile=None):
     from usr.plugins.requesty.helpers.policy import Policy
@@ -89,6 +93,8 @@ def effective_policy(profile=None):
 def requesty_owner(agent):
     from usr.plugins.requesty.helpers import scope
     candidate=scope.from_agent(agent)
+    if read('setup.json',{}).get('native_presets'):
+        return candidate if scope.read(candidate,'credentials.json',{}).get('key') else SHARED
     setup=scope.read(candidate,'setup.json')
     # A deliberate active profile model setup remains a selection, even if its
     # old profile toggle is off. Runtime validation enforces the instance floor.
@@ -151,11 +157,15 @@ def filter_check(config):
 
 def public_status():
     setup=read('setup.json',{})
+    if setup.get('native_presets'):
+        from plugins._model_config.helpers import model_config as mc
+        config=mc.get_config()
+        setup={**setup,'preset_name':mc.get_configured_preset_name(),'models':{slot:config.get(section,{}) for slot,section in [('chat','chat_model'),('utility','utility_model'),('vision','vision_model')]}}
     account=read('account.json',{})
     public_models={slot:{field:conf.get(field) for field in ('provider','name','api_base','ctx_length','vision','override_main') if field in conf}
                    for slot,conf in setup.get('models',{}).items() if slot in {'chat','utility','vision'} and isinstance(conf,dict)}
     return {'active':active(),'components':components(),'has_key':bool(read('credentials.json',{}).get('key')),
-        'models':public_models,'local':read('local.json',{}),'account':account,
+        'models':public_models,'native_presets':setup.get('native_presets',False),'preset_name':setup.get('preset_name'),'local':read('local.json',{}),'account':account,
         'account_verification':account.get('verification','unverified'),
         'policy':read('config.json',MINIMUM),'images':'External images are not protected by text masking.',
         'tools':'Websites, uploads and tool transfers are not comprehensively monitored.'}
@@ -178,6 +188,18 @@ def model_catalog():
     return [{**{field:entry.get(field) for field in fields},'allowed':not policy.reasons(entry),
              'reasons':policy.reasons(entry)} for entry in fetch(policy.endpoint,key,refresh=True).values()]
 
+def configure_local(languages):
+    from helpers import plugins
+    if not isinstance(languages,list) or not languages or any(v not in {'de','en','fr','es','it','nl','pl','pt'} for v in languages):raise ValueError('Choose supported filter languages.')
+    local=deepcopy(read('local.json') or plugins.get_default_plugin_config('local_privacy_guard'))
+    requested=set(languages)|{'en'}
+    if active():requested.update(local.get('pii_filter',{}).get('languages',[]))
+    local.update(enabled=True)
+    local['pii_filter'].update(enabled=True,use_regex=True,use_ner=True,action='redact',store_mapping=True,languages=sorted(requested))
+    local['local_embedding'].update(enabled=True,auto_configure=True)
+    filter_check(local)
+    write('config.json',effective_policy());write('local.json',local)
+
 def prepare_local(languages):
     require_components()
     if active():raise ValueError('Deactivate centrally before preparing a changed language selection.')
@@ -194,6 +216,7 @@ def prepare_local(languages):
     importlib.invalidate_caches()
 
 def configure(value):
+    if read('setup.json',{}).get('native_presets'):raise ValueError('Edit model choices in the native A0 preset editor. Native preset migration cannot be replaced by a legacy model copy.')
     require_components()
     from helpers import plugins
     from usr.plugins.requesty.helpers.policy import Policy
@@ -243,10 +266,14 @@ def activate():
     key=read('credentials.json',{}).get('key')
     policy=Policy.parse(effective_policy())
     catalog=fetch(policy.endpoint,key,refresh=True)
-    for slot in ('chat','utility','vision'):
+    for slot in (() if setup.get('native_presets') else ('chat','utility','vision')):
         entry=catalog.get(setup.get('models',{}).get(slot,{}).get('name'));policy.check(entry)
         if entry.get('supports_tool_calling') is not True:raise ValueError('Tool support is no longer confirmed for a selected model.')
         if slot=='vision' and entry.get('supports_vision') is not True:raise ValueError('Vision support is no longer confirmed.')
+    if setup.get('native_presets'):
+        from .native_presets import validate
+        from plugins._model_config.helpers import model_config as mc
+        validate(mc.resolve_preset(mc.get_configured_preset_name()),catalog)
     from usr.plugins.requesty_privacy_agent.helpers.adapters import install
     install()
     install_legacy_bridge()
@@ -260,6 +287,9 @@ def activate():
         if context.agent0:
             mapping_identity(context.agent0);save_tmp_chat(context)
     write('active.json',{'active':True,'activated_at':datetime.now(timezone.utc).isoformat(),'api_version':1})
+    if setup.get('native_presets'):
+        from . import preset_bridge
+        preset_bridge.install()
 
 def deactivate(confirmation):
     if confirmation!='DISABLE_INSTANCE_PROTECTION':raise ValueError('Confirm that all profiles lose the instance minimum rules.')
@@ -268,10 +298,13 @@ def deactivate(confirmation):
         raise ValueError('Wait until running chats finish before changing the instance rules.')
     write('active.json',{'active':False})
     remove_legacy_bridge()
+    from . import preset_bridge
+    preset_bridge.remove()
 
 def apply_model_config(data,agent):
-    if not active() or agent is None:return
+    if not active():return
     require_components()
+    if read('setup.json',{}).get('native_presets') or agent is None:return
     args=data.get('args',())
     name=args[0] if args else data.get('kwargs',{}).get('plugin_name')
     if name!='_model_config' or not isinstance(data.get('result'),dict):return
@@ -294,6 +327,8 @@ def enforce_call(data,method):
     from usr.plugins.requesty.helpers.call_context import tool_agent
     from usr.plugins.local_privacy_guard.helpers.model_guard import tool_agent as filter_owner,filtered_call
     wrapper=data['args'][0]
+    if read('setup.json',{}).get('native_presets') and is_local_route(wrapper,{**wrapper.kwargs,**data.get('kwargs',{})}):
+        raise ValueError('Main, Utility and Vision must use Requesty while Privacy Agent is active.')
     proof=filtered_call.get()
     filtered_owner=proof[1] if proof and proof[0] is wrapper else None
     owner=tool_agent.get() or filter_owner.get() or filtered_owner
@@ -346,6 +381,7 @@ def install_legacy_bridge():
                     require_components()
                     from usr.plugins.local_privacy_guard.helpers.model_guard import filtered_call,is_local
                     proof=filtered_call.get()
+                    if read('setup.json',{}).get('native_presets') and is_local(wrapper,kwargs):raise ValueError('Privacy Agent requires Requesty for chat models.')
                     if not is_local(wrapper,kwargs):
                         if not proof or proof[0] is not wrapper:
                             raise ValueError('This old external model wrapper has not passed the chat text filter. Rebuild it using the protected model getter.')
