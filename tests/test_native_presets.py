@@ -228,3 +228,27 @@ def test_native_editor_empty_embedding_fields_do_not_block_valid_model_edits(nat
     assert response['ok'] and mc.resolve_preset('Efficiency')['utility']['name']=='gpt-6-luna@eu'
     assert response['privacy_presets']['active']
     assert mc.get_embedding_providers()==[{'value':'huggingface','label':'Local HuggingFace'}]
+
+def test_dynamic_native_api_loader_uses_the_same_policy_and_short_catalog(native,monkeypatch):
+    m,path,available=native;migrate(native)
+    from helpers.modules import load_classes_from_file
+    from helpers import files
+    from helpers.api import ApiHandler
+    from flask import Flask,request
+    handler=load_classes_from_file(files.get_abs_path('plugins/_model_config/api/model_search.py'),ApiHandler)[0](None,None)
+    def forbidden(*args,**kwargs):raise AssertionError('Unfiltered native catalog must not run.')
+    monkeypatch.setattr(handler,'_fetch_models',forbidden)
+    available['vendor/deepseek-v4.1-flash']=dict(available['deepseek-v4.1-flash@eu'],id='vendor/deepseek-v4.1-flash')
+    app=Flask(__name__)
+    with app.test_request_context('/api/plugins/_model_config/model_search',method='POST',json={'provider':'requesty_guarded','query':'deepseek','model_type':'chat'}):
+        result=asyncio.run(handler.handle_request(request))
+        assert result.status_code==200
+        assert result.get_json()['models']==['deepseek-v4.1-flash@eu']
+    with app.test_request_context('/api/plugins/_model_config/model_search',method='POST',json={'provider':'openai','model_type':'embedding'}):
+        assert asyncio.run(handler.handle_request(request)).status_code==400
+    save=load_classes_from_file(files.get_abs_path('plugins/_model_config/api/model_presets.py'),ApiHandler)[0](None,None)
+    bad=deepcopy(mc.get_presets());bad[0]['chat']['provider']='openrouter'
+    before=mc.get_presets()
+    with app.test_request_context('/api/plugins/_model_config/model_presets',method='POST',json={'action':'save','presets':bad}):
+        assert asyncio.run(save.handle_request(request)).status_code==400
+    assert mc.get_presets()==before

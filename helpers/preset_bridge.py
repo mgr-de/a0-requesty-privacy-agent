@@ -36,7 +36,7 @@ def install():
     from plugins._model_config.api.model_search import ModelSearch
     from plugins._agent_editor.helpers import editor
     from agent import AgentContext
-    from helpers.api import Response
+    from helpers.api import Response,ApiHandler
     import models
 
     def embedding_factory(original):
@@ -169,3 +169,24 @@ def install():
             return checked
         return factory
     for cls,kind in [(ModelPresets,'presets'),(ModelOverride,'override'),(ModelConfigGet,'config'),(ModelSearch,'search')]:bind(cls,'process',api_factory(kind))
+
+    # A0's route loader creates distinct classes from the same source files.
+    # Guard the authenticated common entry as well as ordinary imports.
+    def handler_factory(original):
+        @wraps(original)
+        async def checked(self,request):
+            kinds={'model_presets':'presets','model_override':'override','model_config_get':'config','model_search':'search'}
+            kind=kinds.get(request.path.removeprefix('/api/plugins/_model_config/')) if request.path.startswith('/api/plugins/_model_config/') else None
+            if not n.enabled() or kind is None:return await original(self,request)
+            try:
+                data=request.get_json(silent=True) if request.is_json else {}
+                if not isinstance(data,dict):return Response(status=400,response='Model settings must be an object.')
+                async def process(instance,input,request):return await instance.process(input,request)
+                output=await api_factory(kind)(process)(self,data,request)
+                if isinstance(output,Response):return output
+                import json
+                return Response(response=json.dumps(output),status=200,mimetype='application/json')
+            except ValueError as error:return Response(status=400,response=str(error))
+            except Exception:return Response(status=500,response='Privacy preset operation failed. Check installed components and the Requesty connection.')
+        return checked
+    bind(ApiHandler,'handle_request',handler_factory)
