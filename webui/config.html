@@ -1,0 +1,63 @@
+<html><head><title>Requesty Privacy Agent</title>
+<link rel="stylesheet" href="/plugins/requesty_privacy_agent/webui/privacy-settings.css">
+<script type="module" src="/plugins/requesty_privacy_agent/webui/privacy-agent-store.js"></script>
+</head><body><div x-data>
+<template x-if="$store.privacyAgent"><div class="privacy-settings" x-init="$store.privacyAgent.open()" x-destroy="$store.privacyAgent.cleanup()" :aria-busy="$store.privacyAgent.busy">
+<h2 class="section-title">Datenschutz für diesen Agenten</h2>
+<p>Einmal einrichten: Mindestregeln gelten für alle bestehenden und neuen Profile dieser Agent-Zero-Installation. Eigene zulässige Modelle bleiben möglich.</p>
+<p><strong x-text="$store.privacyAgent.status?.active ? 'Installationsweite Mindestregeln aktiv' : 'Installationsweite Mindestregeln noch nicht aktiv'"></strong></p>
+<fieldset :disabled="$store.privacyAgent.busy"><legend>1 · Komponenten</legend>
+<template x-for="(component,name) in ($store.privacyAgent.status?.components||{})" :key="name"><p x-text="name+' · '+(component.compatible ? 'bereit' : component.installed ? 'Aktualisierung erforderlich' : 'fehlt')+' '+component.version"></p></template>
+<button class="btn" type="button" @click="$store.privacyAgent.action('install_dependencies')">Fehlende Plugins installieren</button>
+<p>Vorhandene Plugins und ihre Einstellungen bleiben erhalten. Veraltete Versionen bitte über die native Plugin-Verwaltung aktualisieren. Nach Installation Agent Zero neu starten.</p>
+</fieldset>
+<fieldset :disabled="$store.privacyAgent.busy || $store.privacyAgent.status?.active"><legend>2 · Gemeinsamer Requesty-Schlüssel</legend>
+<p x-text="$store.privacyAgent.status?.has_key ? 'Gemeinsamer Schlüssel gespeichert. Sein Wert wird nicht angezeigt.' : 'Noch kein gemeinsamer Schlüssel gespeichert.'"></p>
+<div class="field"><div class="field-label"><label class="field-title" for="privacy-agent-key">API-Schlüssel</label></div><div class="field-control"><input id="privacy-agent-key" type="password" autocomplete="off" x-model="$store.privacyAgent.key"></div></div>
+<button class="btn" type="button" @click="$store.privacyAgent.action('key',{key:$store.privacyAgent.key})" :disabled="!$store.privacyAgent.key.trim()">Schlüssel speichern</button>
+</fieldset>
+<details><summary>3 · Requesty-Konto zusätzlich absichern</summary>
+<p>Die folgenden Einstellungen betreffen das ganze Requesty-Konto, auch andere Anwendungen. Ändere sie bewusst in Requesty; dieses Plugin ändert dort keine administrativen Regeln.</p>
+<label><input type="checkbox" x-model="$store.privacyAgent.account.eu_gateway"> Serving region: EU only</label><br>
+<label><input type="checkbox" x-model="$store.privacyAgent.account.requesty_zdr"> Requesty Zero data retention</label><br>
+<label><input type="checkbox" x-model="$store.privacyAgent.account.provider_zdr"> Zero-data-retention models only</label><br>
+<label><input type="checkbox" x-model="$store.privacyAgent.account.approved_eu_models"> Approved Models: EU-Modellstandort, keine Speicherung, kein Training geprüft</label>
+<p>Gateway und Modellanbieter sind getrennte Verarbeiter. Nutzungsmetadaten bleiben gespeichert. Gesperrte Einstellungen lassen sich gegebenenfalls nur über den Support ändern.</p>
+<a href="https://docs.requesty.ai/features/compliance-report" target="_blank" rel="noopener noreferrer">Anleitung bei Requesty</a>
+<button class="btn" type="button" @click="$store.privacyAgent.action('account',{settings:{...$store.privacyAgent.account}})" :disabled="$store.privacyAgent.busy">Meine Bestätigung speichern</button>
+<p x-text="$store.privacyAgent.status?.account?.confirmed_at ? ($store.privacyAgent.status.account_verification === 'user_confirmed' ? 'Vom Nutzer bestätigt: ' : 'Noch nicht vollständig bestätigt: ')+$store.privacyAgent.status.account.confirmed_at+' · Nicht technisch verifiziert' : 'Kontoeinstellungen nicht verifiziert'"></p>
+</details>
+<fieldset :disabled="$store.privacyAgent.busy || $store.privacyAgent.status?.active"><legend>4 · Modelle und lokale Erkennung</legend>
+<button class="btn" type="button" @click="$store.privacyAgent.action('catalog')" :disabled="!$store.privacyAgent.status?.has_key">Verbindung prüfen und Modelle laden</button>
+<p>Diese Prüfung ruft den Modellkatalog ab. Sie startet keine kostenpflichtige Modellantwort. Es wird kein Modell automatisch ausgewählt.</p>
+<div class="field"><div class="field-label"><label class="field-title" for="privacy-agent-main">Gesprächsmodell</label></div><div class="field-control"><select id="privacy-agent-main" x-model="$store.privacyAgent.main" :disabled="!$store.privacyAgent.loaded"><option value="">Modell wählen</option><template x-if="!$store.privacyAgent.loaded && $store.privacyAgent.main"><option :value="$store.privacyAgent.main" :selected="true" x-text="$store.privacyAgent.main"></option></template><template x-for="m in $store.privacyAgent.choices()" :key="m.id"><option :value="m.id" :selected="m.id === $store.privacyAgent.main" x-text="m.id"></option></template></select></div></div>
+<div class="field"><div class="field-label"><label class="field-title" for="privacy-agent-utility">Hilfsmodell</label></div><div class="field-control"><select id="privacy-agent-utility" x-model="$store.privacyAgent.utility" :disabled="!$store.privacyAgent.loaded"><option value="">Modell wählen</option><template x-if="!$store.privacyAgent.loaded && $store.privacyAgent.utility"><option :value="$store.privacyAgent.utility" :selected="true" x-text="$store.privacyAgent.utility"></option></template><template x-for="m in $store.privacyAgent.choices()" :key="m.id"><option :value="m.id" :selected="m.id === $store.privacyAgent.utility" x-text="m.id"></option></template></select></div></div>
+<div class="field"><div class="field-label"><label class="field-title" for="privacy-agent-vision">Bildmodell</label></div><div class="field-control"><select id="privacy-agent-vision" x-model="$store.privacyAgent.vision" :disabled="!$store.privacyAgent.loaded"><option value="">Modell wählen</option><template x-if="!$store.privacyAgent.loaded && $store.privacyAgent.vision"><option :value="$store.privacyAgent.vision" :selected="true" x-text="$store.privacyAgent.vision"></option></template><template x-for="m in $store.privacyAgent.choices(true)" :key="m.id"><option :value="m.id" :selected="m.id === $store.privacyAgent.vision" x-text="m.id"></option></template></select></div></div>
+<details><summary>Erweiterte Einstellungen: Sprachen und ausgeschlossene Modelle</summary>
+<p>Englisch wird immer benötigt. Weitere Sprachen benötigen ihre lokalen spaCy-Erkennungsmodelle. Ohne erforderliche Modelle wird die Aktivierung abgelehnt.</p>
+<template x-for="lang in ['de','fr','es','it','nl','pl']" :key="lang"><label style="margin-right:1rem"><input type="checkbox" :value="lang" x-model="$store.privacyAgent.languages"><span x-text="lang"></span></label></template>
+<template x-for="m in $store.privacyAgent.models.filter(m=>!m.allowed)" :key="m.id"><p x-text="m.id+': '+m.reasons.join(' ')"></p></template>
+</details>
+<p>Falls lokale Erkennungsmodelle oder Embedding-Gewichte fehlen, können sie hier von spaCy und Hugging Face heruntergeladen werden. Es werden keine Chatdaten übertragen und kein lokaler Chat-LLM benötigt.</p>
+<button class="btn" type="button" @click="$store.privacyAgent.action('prepare_local',{languages:[...$store.privacyAgent.languages]})">Lokale Erkennung vorbereiten</button>
+<button class="btn" type="button" @click="$store.privacyAgent.configure()" :disabled="!$store.privacyAgent.loaded || !$store.privacyAgent.main || !$store.privacyAgent.utility || !$store.privacyAgent.vision">Lokale Komponenten prüfen und Einrichtung speichern</button>
+</fieldset>
+<fieldset :disabled="$store.privacyAgent.busy"><legend>5 · Installation schützen</legend>
+<p>Alle Profile erben EU-Modellregeln, lokale Textmaskierung und lokale Embeddings. Eigene Einstellungen dürfen diese Mindestregeln nicht abschwächen. Unzulässige Presets blockieren Modellaufrufe.</p>
+<label><input type="checkbox" x-model="$store.privacyAgent.confirmAll"> Ich möchte alle bestehenden und künftigen Profile dieser Installation schützen.</label>
+<button class="btn" type="button" @click="$store.privacyAgent.activate()" :disabled="!$store.privacyAgent.confirmAll || !$store.privacyAgent.configurationCurrent() || $store.privacyAgent.status?.active">Diese Installation schützen</button>
+<p x-show="!$store.privacyAgent.configurationCurrent()">Die ausgewählten Modelle und Sprachen zuerst prüfen und speichern. Änderungen sind noch nicht aktiv.</p>
+</fieldset>
+<h3>Schutzstatus und Grenzen</h3>
+<p x-text="$store.privacyAgent.status?.active ? 'Modellroute: EU-Requesty-Anforderungen aktiv. Textfilter: lokale Maskierung und Secret-Blockierung vorgeschrieben. Embeddings: lokal vorgeschrieben.' : 'Installationsweite Regeln inaktiv. Der Schutz einzelner Profile hängt von deren eigener Einrichtung ab.'"></p>
+<p x-text="'Gemeinsame Modelle: Main '+($store.privacyAgent.status?.models?.chat?.name || 'nicht eingerichtet')+' · Utility '+($store.privacyAgent.status?.models?.utility?.name || 'nicht eingerichtet')+' · Vision '+($store.privacyAgent.status?.models?.vision?.name || 'nicht eingerichtet')"></p>
+<p>Profilmodelle und aktuelle Presets können abweichen; die tatsächlichen Modelle und Ablehnungsgründe stehen im Chat-Schutzstatus.</p>
+<p>Bilder werden beim ausgewählten Dienst verarbeitet. Die lokale Textmaskierung schützt ihren Bildinhalt nicht.</p>
+<p>Webseiten, Formulare, Uploads und andere Werkzeugübertragungen werden nicht vollständig überwacht. Browserfunktionen bleiben verfügbar. Eine zugelassene Modellroute ist keine Freigabe einer Webseite.</p>
+<p>Keine vollständige Anonymisierung oder Rechtssicherheitsgarantie. Host-Administratoren und fremde Netzwerkclients liegen außerhalb dieser Plugin-Grenze.</p>
+<details><summary>Installationsweiten Schutz bewusst abschalten</summary>
+<p>Alle Profile verlieren die gemeinsamen Mindestregeln. Ihre vorherigen eigenen Einstellungen gelten wieder. Zugangsdaten und Konfigurationen bleiben erhalten.</p>
+<label><input type="checkbox" x-model="$store.privacyAgent.confirmDisable"> Ich verstehe, dass alle Profile betroffen sind.</label>
+<button class="btn" type="button" @click="$store.privacyAgent.deactivate()" :disabled="$store.privacyAgent.busy || !$store.privacyAgent.confirmDisable || !$store.privacyAgent.status?.active">Installationsweiten Schutz abschalten</button>
+</details>
+</div></template></div></body></html>

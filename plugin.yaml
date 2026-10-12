@@ -1,0 +1,9 @@
+name: requesty_privacy_agent
+title: Requesty Privacy Agent
+description: One setup for all profiles in this Agent Zero installation. Uses Requesty and Local Privacy Guard; images and tool transfers have separate limits.
+version: 0.1.0
+settings_sections:
+  - agent
+per_project_config: false
+per_agent_config: false
+always_enabled: true
