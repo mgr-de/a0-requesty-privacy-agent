@@ -2,9 +2,23 @@
 
 # Requesty Privacy Agent für Agent Zero 2.13
 
-Ein gemeinsamer Einstieg für EU-Privatanwender: Requesty-Routen, lokale Textmaskierung und lokale Embeddings einmal einrichten und als Mindestregeln für **alle Profile dieser Installation** verwenden. Version 0.2.9 verlangt Local Privacy Guard 1.8.1 und Requesty 0.6.0, verwendet native A0-Presets und ist keine vollständige Sicherheits-Sandbox.
+Ein gemeinsamer Einstieg für EU-Privatanwender: Requesty-Routen, lokale Textmaskierung und lokale Embeddings einmal einrichten und als Mindestregeln für **alle Profile dieser Installation** verwenden. Version 0.3.0 verlangt Local Privacy Guard 1.9.0 und Requesty 0.6.1, verwendet native A0-Presets und ist keine vollständige Sicherheits-Sandbox.
 
 Die bestehenden [Requesty](https://github.com/mgr-de/a0-requesty-privacy-guard) und [Local Privacy Guard](https://github.com/mgr-de/a0-local-privacy-guard) Plugins bleiben erhalten und einzeln nutzbar. Dieser Manager verwendet ihre Filter und Modellprüfung, statt sie zu kopieren.
+
+
+## Developer ohne Maskierung
+
+1. In den Agent-Zero-Einstellungen einen Benutzernamen und ein Passwort für die Oberfläche einrichten und anmelden. Ohne konfigurierte Anmeldung sind Anlage, Freigabe und Widerruf gesperrt. Agent Zero besitzt hierfür keine getrennte Administratorrolle: die angemeldete Instanzbetreiber-Sitzung ist die Berechtigung.
+2. **Eigenes Developer-Profil anlegen** erstellt ein neues Profil ausschließlich aus dem eingebauten Developer-Profil. Bestehende eigene Profile werden nicht kopiert oder überschrieben. Die Anlage erteilt noch keine Ausnahme.
+3. Die Übertragung personenbezogener Daten aus dem gesamten Modellkontext einschließlich Memory und Unteragenten ausdrücklich bestätigen und **Ausnahme ausdrücklich freigeben** wählen.
+4. **Neuer Developer-Chat** erstellt einen eigenen leeren Hauptchat. Sein Status lautet **PII-Maskierung aus · Secret-Prüfung aktiv**. Die Requesty-Route wird separat geprüft; lokale Embeddings bleiben vorgeschrieben. Antworten werden gepuffert und auf Secrets geprüft. Ein lokales Chatmodell ist nicht erforderlich.
+
+Bestehende Chats bleiben maskiert, auch nach Wahl dieses Profils. Unteragenten erben die Hauptchat-Policy. Profil-ID, tatsächliche Definition, Profilgeneration und serverseitiger Chatdatensatz müssen zusammenpassen. Projektüberschreibungen und importierte Chat-Metadaten begründen keine Ausnahme. Bearbeitung/Löschung des freigegebenen Profils widerruft die Freigabe. Profil- oder Projektwechsel eines unmaskierten Chats sperrt ihn dauerhaft für weitere Modellaufrufe.
+
+**Widerruf** stoppt weitere Aufrufe dieser Developer-Chats; eine erneute Freigabe entsperrt sie nicht. Einen neuen geschützten Chat beginnen. Jeder Provider-Versuch wird unmittelbar an der Übergabe an LiteLLM erneut zugelassen, nach Wartezeiten und bei Framework-Fallbacks. Interne LiteLLM-/SDK-Wiederholungen werden für unmaskierte Aufrufe deaktiviert. Diese kontrollierte Zulassung ist der Startzeitpunkt: ein bereits zugelassener Aufruf kann nach Widerruf noch abschließen. Seine Antwort behält den ursprünglichen PII-Modus und wird weiterhin auf Secrets geprüft.
+
+Developer-Memory ist nach Projekt, freigegebener Profilgeneration und Modus getrennt. Geschützte Speicher und Zuordnungen werden nicht übernommen oder rückübersetzt. Lokale Audit-Metadaten sind keine manipulationssichere Historie gegenüber Host-Administratoren. **Der gesamte freigegebene Modellkontext kann personenbezogene Daten unmaskiert an den Modellanbieter übertragen.** Secret-Prüfung, EU-Routing und ZDR ersetzen keine PII-Maskierung.
 
 ## Einrichtung
 

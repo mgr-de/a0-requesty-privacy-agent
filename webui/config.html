@@ -50,13 +50,25 @@
 <button class="btn" type="button" @click="$store.privacyAgent.action('prepare_local',{languages:[...$store.privacyAgent.languages]})">Lokale Erkennung vorbereiten</button></details>
 </fieldset>
 <fieldset :disabled="$store.privacyAgent.busy"><legend>5 · Installation schützen</legend>
-<p>Alle Profile erben EU-Modellregeln, lokale Textmaskierung und lokale Embeddings. Eigene Einstellungen dürfen diese Mindestregeln nicht abschwächen. Unzulässige Presets blockieren Modellaufrufe.</p>
+<p>Alle Profile erben EU-Modellregeln, Secret-Prüfung und lokale Embeddings. PII-Maskierung gilt als Standard; nur ausdrücklich freigegebene neue Developer-Chats erhalten die unten verwaltete Ausnahme. Unzulässige Presets blockieren Modellaufrufe.</p>
 <label><input type="checkbox" x-model="$store.privacyAgent.confirmAll"> Ich möchte alle bestehenden und künftigen Profile dieser Installation schützen.</label>
 <button class="btn" type="button" @click="$store.privacyAgent.activate()" :disabled="!$store.privacyAgent.confirmAll || !$store.privacyAgent.configurationCurrent() || $store.privacyAgent.status?.active">Diese Installation schützen</button>
 <p x-show="!$store.privacyAgent.configurationCurrent()">Native Presets zuerst prüfen und mit Sicherung übernehmen. Erst anschließend den installationsweiten Schutz aktivieren.</p>
 </fieldset>
+<fieldset :disabled="$store.privacyAgent.busy"><legend>Developer ohne PII-Maskierung</legend>
+<p>Nur neu hier angelegte Developer-Chats senden den gesamten Modellkontext einschließlich Memory und Unteragenten ohne PII-Maskierung. Secrets, Requesty-Regeln und lokale Embeddings bleiben geprüft. Bestehende Chats bleiben maskiert.</p>
+<p x-show="!$store.privacyAgent.status?.profile_exceptions?.login_configured">Für diese Freigabe zuerst unter den Agent-Zero-Einstellungen einen Benutzernamen und ein Passwort einrichten und anmelden.</p>
+<button class="btn" type="button" @click="$store.privacyAgent.action('create-developer-profile')" :disabled="!$store.privacyAgent.status?.profile_exceptions?.login_configured || !$store.privacyAgent.status?.active">Eigenes Developer-Profil anlegen</button>
+<template x-for="profile in ($store.privacyAgent.status?.profile_exceptions?.profiles||[])" :key="profile.id"><div>
+<p x-text="profile.id+' · '+(profile.granted ? 'Für neue unmaskierte Chats freigegeben' : 'Keine wirksame Freigabe')"></p>
+<label><input type="checkbox" x-model="$store.privacyAgent.confirmUnmasked"> Ich erlaube, dass personenbezogene Daten aus dem vollständigen Modellkontext und Unteragenten unmaskiert an den Modellanbieter gelangen können.</label>
+<button class="btn" type="button" @click="$store.privacyAgent.action('grant',{profile_id:profile.id,confirmation:'ALLOW_UNMASKED_CONTEXT_AND_SUBAGENTS'})" :disabled="!$store.privacyAgent.confirmUnmasked || !$store.privacyAgent.status?.profile_exceptions?.login_configured || profile.granted">Ausnahme ausdrücklich freigeben</button>
+<button class="btn" type="button" @click="$store.privacyAgent.createDeveloperChat()" :disabled="!profile.granted || !$store.privacyAgent.status?.profile_exceptions?.login_configured">Neuer Developer-Chat</button>
+<button class="btn" type="button" @click="$store.privacyAgent.action('revoke',{profile_id:profile.id})" :disabled="!profile.granted || !$store.privacyAgent.status?.profile_exceptions?.login_configured">Freigabe widerrufen</button>
+<p>Widerruf sperrt weitere Modellaufrufe dieser Chats. Bereits zugelassene Aufrufe können abschließen. Danach einen neuen geschützten Chat beginnen. Profil- oder Projektwechsel eines unmaskierten Chats sperrt ebenfalls weitere Aufrufe.</p>
+</div></template></fieldset>
 <h3>Schutzstatus und Grenzen</h3>
-<p x-text="$store.privacyAgent.status?.active ? 'Modellroute: EU-Requesty-Anforderungen aktiv. Textfilter: lokale Maskierung und Secret-Blockierung vorgeschrieben. Embeddings: lokal vorgeschrieben.' : 'Installationsweite Regeln inaktiv. Der Schutz einzelner Profile hängt von deren eigener Einrichtung ab.'"></p>
+<p x-text="$store.privacyAgent.status?.active ? 'Modellroute: EU-Requesty-Anforderungen aktiv. PII-Maskierung ist Standard; freigegebene neue Developer-Chats haben eine ausdrückliche Ausnahme. Secret-Prüfung und lokale Embeddings bleiben vorgeschrieben.' : 'Installationsweite Regeln inaktiv. Der Schutz einzelner Profile hängt von deren eigener Einrichtung ab.'"></p>
 <p x-text="'Gemeinsame Modelle: Main '+($store.privacyAgent.status?.models?.chat?.name || 'nicht eingerichtet')+' · Utility '+($store.privacyAgent.status?.models?.utility?.name || 'nicht eingerichtet')+' · Vision '+($store.privacyAgent.status?.models?.vision?.name || 'nicht eingerichtet')"></p>
 <p>Modelle und aktive Presets stehen im nativen Chat-Menü und A0-Preset-Editor. Nicht zulässige Änderungen werden vor dem Speichern abgelehnt.</p>
 <p>Bilder werden beim ausgewählten Dienst verarbeitet. Die lokale Textmaskierung schützt ihren Bildinhalt nicht.</p>

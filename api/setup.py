@@ -5,6 +5,11 @@ from usr.plugins.requesty_privacy_agent.helpers import manager
 class Setup(ApiHandler):
     async def process(self,input,request):
         try:
+            command=input.get('action','status')
+            if command in {'create-developer-profile','grant','revoke'}:
+                # Flask session context is verified before entering the worker.
+                from usr.plugins.requesty_privacy_agent.helpers.profile_exceptions import require_operator
+                require_operator()
             def action():
                 with manager.LOCK:
                     command=input.get('action','status')
@@ -32,6 +37,17 @@ class Setup(ApiHandler):
                     elif command=='install_dependencies':
                         from usr.plugins.requesty_privacy_agent.helpers.dependencies import install_missing
                         install_missing()
+                    elif command in {'create-developer-profile','grant','revoke'}:
+                        from usr.plugins.requesty_privacy_agent.helpers import profile_exceptions as policy
+                        if command=='create-developer-profile':policy.create_profile()
+                        elif command=='grant':policy.grant(input.get('profile_id'),input.get('confirmation'))
+                        else:policy.revoke(input.get('profile_id'))
+                    elif command in {'list','get'}:
+                        from usr.plugins.requesty_privacy_agent.helpers.profile_exceptions import public
+                        result=public()
+                        if command=='get':
+                            result['profiles']=[p for p in result['profiles'] if p['id']==input.get('profile_id')]
+                        return {'ok':True,'profile_exceptions':result}
                     elif command!='status':raise ValueError('Unknown setup action.')
                     return {'ok':True,**manager.public_status()}
             return await asyncio.to_thread(action)
