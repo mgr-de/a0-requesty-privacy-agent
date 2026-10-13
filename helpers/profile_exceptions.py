@@ -155,7 +155,7 @@ def effective(agent):
     # masked initialization inside this internal deletion scope; other tasks
     # keep the original revoked policy and cannot dispatch unmasked calls.
     deletion=deleting_chat.get()
-    if deletion and deletion.get('active') and deletion['context_id']==context.id:
+    if deletion and deletion.get('active') and deletion.get('root_id',deletion['context_id'])==context.id:
         return {'mode':'masked','secret_guard':True}
     claim = context.get_data(CLAIM)
     with manager.LOCK:

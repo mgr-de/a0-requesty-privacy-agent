@@ -43,6 +43,10 @@ def install():
         @wraps(previous)
         async def removed(handler,input,request):
             scope={'context_id':input.get('context'),'active':True}
+            from agent import AgentContext
+            context=AgentContext.get(scope['context_id'])
+            agent=getattr(context,'agent0',None)
+            scope['root_id']=policy.root(agent).context.id if agent else scope['context_id']
             token=policy.deleting_chat.set(scope)
             try:return await previous(handler,input,request)
             finally:

@@ -309,17 +309,23 @@ def test_local_chat_policy_independent_of_optional_login_configuration(policy,mo
     with pytest.raises(ValueError):p.effective(a)
 
 
-def test_revoked_chat_native_delete_uses_only_scoped_masked_initialization(policy,monkeypatch):
+@pytest.mark.parametrize('subordinate',[False,True])
+def test_revoked_chat_native_delete_uses_only_scoped_masked_initialization(policy,monkeypatch,subordinate):
     p,m,root=policy
     from api.chat_remove import RemoveChat
     from helpers import persist_chat,state_monitor_integration
     from helpers.task_scheduler import TaskScheduler
-    from agent import AgentContext
+    from agent import AgentContext,Agent,AgentConfig
     from flask import current_app
     from usr.plugins.requesty_privacy_agent.helpers import exception_lifecycle
-    a=approved(p);p.revoke(p.PROFILE)
+    a=approved(p)
+    subject=a
+    if subordinate:
+        subject=Agent(0,AgentConfig(profile='agent0',mcp_servers=''))
+        subject.context.set_output_data('parent_context_id',a.context.id)
+    p.revoke(p.PROFILE)
     with pytest.raises(ValueError):p.effective(a)
-    scope={'context_id':a.context.id,'active':True}
+    scope={'context_id':subject.context.id,'root_id':a.context.id,'active':True}
     token=p.deleting_chat.set(scope)
     try:
         assert p.effective(a)['mode']=='masked'
@@ -335,10 +341,13 @@ def test_revoked_chat_native_delete_uses_only_scoped_masked_initialization(polic
     monkeypatch.setattr(state_monitor_integration,'mark_dirty_all',lambda **kwargs:None)
     exception_lifecycle.install()
     with current_app.test_request_context('/api/chat_remove'):
-        result=asyncio.run(RemoveChat(None,None).process({'context':a.context.id},None))
+        result=asyncio.run(RemoveChat(None,None).process({'context':subject.context.id},None))
     assert result['message']=='Context removed.'
-    assert AgentContext.get(a.context.id) is None
-    assert a.context.id not in p.state()['chats']
+    assert AgentContext.get(subject.context.id) is None
+    if subordinate:
+        assert AgentContext.get(a.context.id) is not None
+        assert a.context.id in p.state()['chats']
+    else:assert a.context.id not in p.state()['chats']
     assert p.deleting_chat.get() is None
     with pytest.raises(ValueError):p.effective(a)
 
