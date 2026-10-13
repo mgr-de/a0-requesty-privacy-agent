@@ -177,7 +177,11 @@ def install():
         async def checked(self,request):
             kinds={'model_presets':'presets','model_override':'override','model_config_get':'config','model_search':'search'}
             kind=kinds.get(request.path.removeprefix('/api/plugins/_model_config/')) if request.path.startswith('/api/plugins/_model_config/') else None
-            if not n.enabled() or kind is None:return await original(self,request)
+            if not n.enabled() or kind is None:
+                result=await original(self,request)
+                from .exception_lifecycle import profile_response
+                profile_response(request,result)
+                return result
             try:
                 data=request.get_json(silent=True) if request.is_json else {}
                 if not isinstance(data,dict):return Response(status=400,response='Model settings must be an object.')

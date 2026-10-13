@@ -1,10 +1,10 @@
-> **A0 Privacy Suite 0.9.1 - community beta.** Independently developed for local Agent Zero installations. Not a Requesty product; not affiliated with or endorsed by Requesty. Requesty is the external routing service used by the Model Gateway. All three components share version 0.9.1. Older numbers in historical reports document previous tests, not current requirements.
+> **A0 Privacy Suite 0.9.2 - community beta.** Independently developed for local Agent Zero installations. Not a Requesty product; not affiliated with or endorsed by Requesty. Requesty is the external routing service used by the Model Gateway. All three components share version 0.9.2. Older numbers in historical reports document previous tests, not current requirements.
 
 <p align="center"><img src="webui/thumbnail.svg" width="128" alt="A0 Privacy Suite - Manager"></p>
 
 # A0 Privacy Suite - Manager für Agent Zero 2.13
 
-Ein gemeinsamer Einstieg für EU-Privatanwender: Requesty-Routen, lokale Textmaskierung und lokale Embeddings einmal einrichten und als Mindestregeln für **alle Profile dieser Installation** verwenden. Version 0.9.1 verlangt A0 Privacy Suite - Local Guard 0.9.1 und A0 Privacy Suite - Model Gateway 0.9.1, verwendet native A0-Presets und ist keine vollständige Sicherheits-Sandbox.
+Ein gemeinsamer Einstieg für EU-Privatanwender: Requesty-Routen, lokale Textmaskierung und lokale Embeddings einmal einrichten und als Mindestregeln für **alle Profile dieser Installation** verwenden. Version 0.9.2 verlangt A0 Privacy Suite - Local Guard 0.9.2 und A0 Privacy Suite - Model Gateway 0.9.2, verwendet native A0-Presets und ist keine vollständige Sicherheits-Sandbox.
 
 Die bestehenden [A0 Privacy Suite - Model Gateway](https://github.com/mgr-de/a0-requesty-privacy-guard) und [A0 Privacy Suite - Local Guard](https://github.com/mgr-de/a0-local-privacy-guard) Plugins bleiben erhalten und einzeln nutzbar. Dieser Manager verwendet ihre Filter und Modellprüfung, statt sie zu kopieren.
 
@@ -94,11 +94,11 @@ Sicherungen liegen ausschließlich lokal unter usr/privacy-agent/preset-backups.
 
 Die nativen Speicher- und Auswahladapter werden beim A0-Start eingerichtet, sind reversibel und verändern keine A0-Kerndateien. Direkte API-Eingaben werden ebenfalls geprüft; alte Modellwrapper mit abweichender Modellwahl müssen neu aufgebaut werden. Ohne Manager bleibt das eigenständige Verhalten dieses Plugins erhalten. Bildinhalte und beliebige Werkzeugübertragungen bleiben außerhalb der lokalen Textmaskierung.
 
-New installations require A0 Privacy Suite - Local Guard 0.9.1: the optimized spaCy/Regex pipeline is the sole production detector. Backend selection and optional detector installation have been removed. Existing mappings, presets and credentials remain intact. Detector experiments are retained on `archive/cpu-pii-evaluation-2026-10-13` in the companion repositories. Existing installations are updated through the native plugin manager; compatible plugins are not overwritten by dependency setup.
+New installations require A0 Privacy Suite - Local Guard 0.9.2: the optimized spaCy/Regex pipeline is the sole production detector. Backend selection and optional detector installation have been removed. Existing mappings, presets and credentials remain intact. Detector experiments are retained on `archive/cpu-pii-evaluation-2026-10-13` in the companion repositories. Existing installations are updated through the native plugin manager; compatible plugins are not overwritten by dependency setup.
 
 ## Code bei der Softwareentwicklung
 
-A0 Privacy Suite - Local Guard 0.9.1 erkennt vollständige Python-Ausschnitte sowie konservativ JavaScript/TypeScript. Erkannte Syntax, Bezeichner und numerische Code-Konstanten bleiben erhalten; Kommentare, Zeichenketten und Secrets werden weiter geprüft. Unterstützte Umgebungsreferenzen werden von tatsächlichen Zugangsdaten unterschieden. Unvollständige oder nicht unterstützte Ausschnitte bleiben in der normalen Prüfung. [Verhalten und Grenzen](https://github.com/mgr-de/a0-local-privacy-guard/blob/main/docs/CODE-FILTERING.md).
+A0 Privacy Suite - Local Guard 0.9.2 erkennt vollständige Python-Ausschnitte sowie konservativ JavaScript/TypeScript. Erkannte Syntax, Bezeichner und numerische Code-Konstanten bleiben erhalten; Kommentare, Zeichenketten und Secrets werden weiter geprüft. Unterstützte Umgebungsreferenzen werden von tatsächlichen Zugangsdaten unterschieden. Unvollständige oder nicht unterstützte Ausschnitte bleiben in der normalen Prüfung. [Verhalten und Grenzen](https://github.com/mgr-de/a0-local-privacy-guard/blob/main/docs/CODE-FILTERING.md).
 
 Es gibt keine pauschale Code-Ausnahme und keinen weiteren Erkennungsbackend. Die Mindestregeln und Requesty-Routen bleiben aktiv. Für eigenständige lokale Modelltests kann A0 Privacy Suite - Local Guard ohne aktivierten zentralen Manager genutzt werden; die zentrale Requesty-Einrichtung verlangt weiterhin ihre geprüften Routen.
 
@@ -106,9 +106,9 @@ Die [Prüfung des festen Detektors](docs/SINGLE-DETECTOR-VALIDATION.md) dokument
 
 ## Suite versioning and existing installations
 
-All three components use the same suite version. 0.9.1 starts the unified community beta numbering and replaces the former Local Guard 1.9.0, Model Gateway 0.6.1 and Manager 0.3.3; it does not remove their functionality. Patch versions (0.9.x) cover fixes, later 0.x minor versions cover feature or compatibility changes, and 1.0 is reserved for a separately decided stable release. Versions below 1.0 do not promise a stable public API. Update all three components together through the native Git plugin updater and restart Agent Zero; older Local Guard metadata has a higher number, so an installer that refuses downgrades may require the explicit Git update. Do not uninstall or delete user data to change the name. Existing internal IDs, repository URLs, keys, mappings and stored presets remain valid. Historical tags and reports remain unchanged; new packages are marked as pre-releases.
+All three components use the same suite version. 0.9.2 starts the unified community beta numbering and replaces the former Local Guard 1.9.0, Model Gateway 0.6.1 and Manager 0.3.3; it does not remove their functionality. Patch versions (0.9.x) cover fixes, later 0.x minor versions cover feature or compatibility changes, and 1.0 is reserved for a separately decided stable release. Versions below 1.0 do not promise a stable public API. Update all three components together through the native Git plugin updater and restart Agent Zero; older Local Guard metadata has a higher number, so an installer that refuses downgrades may require the explicit Git update. Do not uninstall or delete user data to change the name. Existing internal IDs, repository URLs, keys, mappings and stored presets remain valid. Historical tags and reports remain unchanged; new packages are marked as pre-releases.
 
-## Community beta 0.9.1: compatibility and installation
+## Community beta 0.9.2: compatibility and installation
 
 Test target: Agent Zero 2.13 on Linux Docker, framework Python 3.12, CPU-only privacy detection. The exact image/framework commit and observed cold-install/download measurements are recorded in `docs/COMMUNITY-BETA-VALIDATION.md`. Other versions and deployment types have not been certified. This is independent community software, not an official Requesty product.
 

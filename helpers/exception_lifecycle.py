@@ -39,24 +39,10 @@ def install():
             return result
         return changed
     attach(SetAgentProfile,'process',profile_change)
-    # Builtin API handlers are loaded dynamically. Their common base is stable,
-    # so this boundary also covers the actual HTTP handler class and cache.
-    from helpers.api import ApiHandler
-    def profile_request(previous):
-        @wraps(previous)
-        async def handled(handler,request):
-            result=await previous(handler,request)
-            if manager.active() and request.path.rstrip('/').endswith('/agent_profile_set') and result.status_code==200:
-                output=result.get_json(silent=True)
-                if isinstance(output,dict) and output.get('ok'):
-                    input=request.get_json(silent=True) or {}
-                    context_id=str(input.get('context_id','') or '').strip()
-                    record=policy.state()['chats'].get(context_id)
-                    if record and output.get('agent_profile')!=record['profile_id']:
-                        block(context_id)
-            return result
-        return handled
-    attach(ApiHandler,'handle_request',profile_request)
+    # One stable common API boundary is owned by the preset bridge. Its
+    # passthrough path also applies the Developer lifecycle check below.
+    from . import preset_bridge
+    preset_bridge.install()
     def chat_remove(previous):
         @wraps(previous)
         async def removed(handler,input,request):
@@ -108,3 +94,14 @@ def remove():
     for owner,name,previous,proxy in reversed(_bridges):
         if getattr(owner,name) is proxy:setattr(owner,name,previous)
     _bridges.clear()
+
+
+def profile_response(request,result):
+    if not request.path.rstrip('/').endswith('/agent_profile_set') or not manager.active() or result.status_code!=200:return
+    output=result.get_json(silent=True)
+    if not isinstance(output,dict) or not output.get('ok'):return
+    from . import profile_exceptions as policy
+    input=request.get_json(silent=True) or {}
+    context_id=str(input.get('context_id','') or '').strip()
+    record=policy.state()['chats'].get(context_id)
+    if record and output.get('agent_profile')!=record['profile_id']:block(context_id)
