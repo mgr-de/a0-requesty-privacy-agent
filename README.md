@@ -2,14 +2,14 @@
 
 # Requesty Privacy Agent für Agent Zero 2.13
 
-Ein gemeinsamer Einstieg für EU-Privatanwender: Requesty-Routen, lokale Textmaskierung und lokale Embeddings einmal einrichten und als Mindestregeln für **alle Profile dieser Installation** verwenden. Version 0.3.0 verlangt Local Privacy Guard 1.9.0 und Requesty 0.6.1, verwendet native A0-Presets und ist keine vollständige Sicherheits-Sandbox.
+Ein gemeinsamer Einstieg für EU-Privatanwender: Requesty-Routen, lokale Textmaskierung und lokale Embeddings einmal einrichten und als Mindestregeln für **alle Profile dieser Installation** verwenden. Version 0.3.1 verlangt Local Privacy Guard 1.9.0 und Requesty 0.6.1, verwendet native A0-Presets und ist keine vollständige Sicherheits-Sandbox.
 
 Die bestehenden [Requesty](https://github.com/mgr-de/a0-requesty-privacy-guard) und [Local Privacy Guard](https://github.com/mgr-de/a0-local-privacy-guard) Plugins bleiben erhalten und einzeln nutzbar. Dieser Manager verwendet ihre Filter und Modellprüfung, statt sie zu kopieren.
 
 
 ## Developer ohne Maskierung
 
-1. In den Agent-Zero-Einstellungen einen Benutzernamen und ein Passwort für die Oberfläche einrichten und anmelden. Ohne konfigurierte Anmeldung sind Anlage, Freigabe und Widerruf gesperrt. Agent Zero besitzt hierfür keine getrennte Administratorrolle: die angemeldete Instanzbetreiber-Sitzung ist die Berechtigung.
+1. **Benutzername und Passwort für die Agent-Zero-Oberfläche dringend empfohlen.** Das Plugin ist primär für eine lokale Installation ohne externen Zugang vorgesehen; dort ist die Anmeldung optional. Ohne Anmeldung kann jeder mit Zugriff auf die Oberfläche Profilausnahmen verwalten. Sobald andere Personen oder ein Netzwerk Zugriff haben, Anmeldung und Zugangsschutz dringend einrichten. Ist eine Anmeldung konfiguriert, muss ihre authentifizierte Sitzung verwendet werden. Die ausdrückliche Freigabe und die native CSRF-Prüfung bleiben immer bestehen; das Plugin erzwingt keine zusätzliche Netzwerk- oder IP-Sperre.
 2. **Eigenes Developer-Profil anlegen** erstellt ein neues Profil ausschließlich aus dem eingebauten Developer-Profil. Bestehende eigene Profile werden nicht kopiert oder überschrieben. Die Anlage erteilt noch keine Ausnahme.
 3. Die Übertragung personenbezogener Daten aus dem gesamten Modellkontext einschließlich Memory und Unteragenten ausdrücklich bestätigen und **Ausnahme ausdrücklich freigeben** wählen.
 4. **Neuer Developer-Chat** erstellt einen eigenen leeren Hauptchat. Sein Status lautet **PII-Maskierung aus · Secret-Prüfung aktiv**. Die Requesty-Route wird separat geprüft; lokale Embeddings bleiben vorgeschrieben. Antworten werden gepuffert und auf Secrets geprüft. Ein lokales Chatmodell ist nicht erforderlich.

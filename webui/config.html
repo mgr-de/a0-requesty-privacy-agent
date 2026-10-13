@@ -57,14 +57,14 @@
 </fieldset>
 <fieldset :disabled="$store.privacyAgent.busy"><legend>Developer ohne PII-Maskierung</legend>
 <p>Nur neu hier angelegte Developer-Chats senden den gesamten Modellkontext einschließlich Memory und Unteragenten ohne PII-Maskierung. Secrets, Requesty-Regeln und lokale Embeddings bleiben geprüft. Bestehende Chats bleiben maskiert.</p>
-<p x-show="!$store.privacyAgent.status?.profile_exceptions?.login_configured">Für diese Freigabe zuerst unter den Agent-Zero-Einstellungen einen Benutzernamen und ein Passwort einrichten und anmelden.</p>
-<button class="btn" type="button" @click="$store.privacyAgent.action('create-developer-profile')" :disabled="!$store.privacyAgent.status?.profile_exceptions?.login_configured || !$store.privacyAgent.status?.active">Eigenes Developer-Profil anlegen</button>
+<p><strong>Anmeldung dringend empfohlen:</strong> Für eine lokale Installation ohne externen Zugang sind Benutzername und Passwort optional. Ohne Anmeldung kann jeder mit Zugriff auf diese Oberfläche Profilausnahmen verwalten. Bei Zugriff durch andere Personen oder aus dem Netzwerk unbedingt Anmeldung einrichten und den Zugang absichern. Eine eingerichtete Anmeldung bleibt verpflichtend.</p>
+<button class="btn" type="button" @click="$store.privacyAgent.action('create-developer-profile')" :disabled="!$store.privacyAgent.status?.active">Eigenes Developer-Profil anlegen</button>
 <template x-for="profile in ($store.privacyAgent.status?.profile_exceptions?.profiles||[])" :key="profile.id"><div>
 <p x-text="profile.id+' · '+(profile.granted ? 'Für neue unmaskierte Chats freigegeben' : 'Keine wirksame Freigabe')"></p>
 <label><input type="checkbox" x-model="$store.privacyAgent.confirmUnmasked"> Ich erlaube, dass personenbezogene Daten aus dem vollständigen Modellkontext und Unteragenten unmaskiert an den Modellanbieter gelangen können.</label>
-<button class="btn" type="button" @click="$store.privacyAgent.action('grant',{profile_id:profile.id,confirmation:'ALLOW_UNMASKED_CONTEXT_AND_SUBAGENTS'})" :disabled="!$store.privacyAgent.confirmUnmasked || !$store.privacyAgent.status?.profile_exceptions?.login_configured || profile.granted">Ausnahme ausdrücklich freigeben</button>
-<button class="btn" type="button" @click="$store.privacyAgent.createDeveloperChat()" :disabled="!profile.granted || !$store.privacyAgent.status?.profile_exceptions?.login_configured">Neuer Developer-Chat</button>
-<button class="btn" type="button" @click="$store.privacyAgent.action('revoke',{profile_id:profile.id})" :disabled="!profile.granted || !$store.privacyAgent.status?.profile_exceptions?.login_configured">Freigabe widerrufen</button>
+<button class="btn" type="button" @click="$store.privacyAgent.action('grant',{profile_id:profile.id,confirmation:'ALLOW_UNMASKED_CONTEXT_AND_SUBAGENTS'})" :disabled="!$store.privacyAgent.confirmUnmasked || profile.granted">Ausnahme ausdrücklich freigeben</button>
+<button class="btn" type="button" @click="$store.privacyAgent.createDeveloperChat()" :disabled="!profile.granted">Neuer Developer-Chat</button>
+<button class="btn" type="button" @click="$store.privacyAgent.action('revoke',{profile_id:profile.id})" :disabled="!profile.granted">Freigabe widerrufen</button>
 <p>Widerruf sperrt weitere Modellaufrufe dieser Chats. Bereits zugelassene Aufrufe können abschließen. Danach einen neuen geschützten Chat beginnen. Profil- oder Projektwechsel eines unmaskierten Chats sperrt ebenfalls weitere Aufrufe.</p>
 </div></template></fieldset>
 <h3>Schutzstatus und Grenzen</h3>
