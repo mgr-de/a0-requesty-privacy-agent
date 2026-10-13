@@ -2,7 +2,7 @@
 
 # Requesty Privacy Agent für Agent Zero 2.13
 
-Ein gemeinsamer Einstieg für EU-Privatanwender: Requesty-Routen, lokale Textmaskierung und lokale Embeddings einmal einrichten und als Mindestregeln für **alle Profile dieser Installation** verwenden. Version 0.2.8 verlangt Local Privacy Guard 1.8.0 und Requesty 0.6.0, verwendet native A0-Presets und ist keine vollständige Sicherheits-Sandbox.
+Ein gemeinsamer Einstieg für EU-Privatanwender: Requesty-Routen, lokale Textmaskierung und lokale Embeddings einmal einrichten und als Mindestregeln für **alle Profile dieser Installation** verwenden. Version 0.2.9 verlangt Local Privacy Guard 1.8.1 und Requesty 0.6.0, verwendet native A0-Presets und ist keine vollständige Sicherheits-Sandbox.
 
 Die bestehenden [Requesty](https://github.com/mgr-de/a0-requesty-privacy-guard) und [Local Privacy Guard](https://github.com/mgr-de/a0-local-privacy-guard) Plugins bleiben erhalten und einzeln nutzbar. Dieser Manager verwendet ihre Filter und Modellprüfung, statt sie zu kopieren.
 
@@ -82,7 +82,7 @@ New installations require Local Privacy Guard 1.7.4: the optimized spaCy/Regex p
 
 ## Code bei der Softwareentwicklung
 
-Local Privacy Guard 1.8.0 erkennt vollständige Python-Ausschnitte sowie konservativ JavaScript/TypeScript. Erkannte Syntax, Bezeichner und numerische Code-Konstanten bleiben erhalten; Kommentare, Zeichenketten und Secrets werden weiter geprüft. Unterstützte Umgebungsreferenzen werden von tatsächlichen Zugangsdaten unterschieden. Unvollständige oder nicht unterstützte Ausschnitte bleiben in der normalen Prüfung. [Verhalten und Grenzen](https://github.com/mgr-de/a0-local-privacy-guard/blob/main/docs/CODE-FILTERING.md).
+Local Privacy Guard 1.8.1 erkennt vollständige Python-Ausschnitte sowie konservativ JavaScript/TypeScript. Erkannte Syntax, Bezeichner und numerische Code-Konstanten bleiben erhalten; Kommentare, Zeichenketten und Secrets werden weiter geprüft. Unterstützte Umgebungsreferenzen werden von tatsächlichen Zugangsdaten unterschieden. Unvollständige oder nicht unterstützte Ausschnitte bleiben in der normalen Prüfung. [Verhalten und Grenzen](https://github.com/mgr-de/a0-local-privacy-guard/blob/main/docs/CODE-FILTERING.md).
 
 Es gibt keine pauschale Code-Ausnahme und keinen weiteren Erkennungsbackend. Die Mindestregeln und Requesty-Routen bleiben aktiv. Für eigenständige lokale Modelltests kann Local Privacy Guard ohne aktivierten zentralen Manager genutzt werden; die zentrale Requesty-Einrichtung verlangt weiterhin ihre geprüften Routen.
 
