@@ -2,7 +2,7 @@
 let active=false,observer=null;
 function decorate(){
     if(active)for(const label of document.querySelectorAll('.model-switcher-model-value span[x-text$=".provider"]')){
-        if(label.textContent==='requesty_guarded')label.textContent='Requesty';
+        if(label.textContent==='requesty_guarded')label.textContent='Requesty (A0 Privacy)';
     }
     for(const select of document.querySelectorAll('select[x-model="model.provider"]')){
         const root=select.closest('[x-data]');

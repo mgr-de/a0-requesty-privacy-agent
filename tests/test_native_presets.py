@@ -60,7 +60,7 @@ def test_existing_deepseek_is_preserved_as_native_selected_preset(native):
     m.write('setup.json',{'active':True,'models':{'chat':model,'utility':model,'vision':model}})
     migrate(native,True)
     name=mc.get_configured_preset_name()
-    assert name.startswith('Requesty bisherige Einrichtung')
+    assert name.startswith('A0 Privacy bisherige Einrichtung')
     assert mc.resolve_preset(name)['chat']['name']=='deepseek-v4.1-flash@eu'
 
 def test_unavailable_model_and_stale_preview_do_not_commit(native):

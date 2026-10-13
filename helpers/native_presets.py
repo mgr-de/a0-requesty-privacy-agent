@@ -133,7 +133,7 @@ def preview(overrides=None, preserve_current=True):
     for asset in plugins.find_plugin_assets('setup.json',plugin_name='requesty',project_name='*',agent_profile='*',only_first=False):
         identity=(asset['project_name'],asset['agent_profile']);old=scope.read(identity,'setup.json',{})
         if not old.get('active') or not old.get('models'):continue
-        name=('Requesty Profil '+identity[1])[:65]+' '+fingerprint(identity)[:8]
+        name=('A0 Privacy Profil '+identity[1])[:65]+' '+fingerprint(identity)[:8]
         original=old['models'];choice=changes.get(name,{})
         try:
             item=build(name,choice.get('main',original['chat']['name']),choice.get('utility',original['utility']['name']),choice.get('vision',original.get('vision',{}).get('name')),available)
@@ -141,9 +141,9 @@ def preview(overrides=None, preserve_current=True):
         except ValueError as error:blocked.append({'name':name,'reason':str(error),'main':original['chat']['name'],'utility':original['utility']['name'],'vision':None})
     setup=m.read('setup.json',{});selected='Default'
     if preserve_current and setup.get('active') and setup.get('models'):
-        old=setup['models'];name='Requesty bisherige Einrichtung'
+        old=setup['models'];name='A0 Privacy bisherige Einrichtung'
         names={p['name'].casefold() for p in result};suffix=1
-        while name.casefold() in names:name='Requesty bisherige Einrichtung '+str(suffix);suffix+=1
+        while name.casefold() in names:name='A0 Privacy bisherige Einrichtung '+str(suffix);suffix+=1
         result.append(build(name,old['chat']['name'],old['utility']['name'],old.get('vision',{}).get('name'),available));selected=name
     return {'already_migrated':False,'presets':result,'previous':existing,'blocked':blocked,'selected':selected,
             'profiles':profiles,'fingerprint':fingerprint(current_snapshot()),'cost_categories':{'Default':'Standard · kostenpflichtiges Sol-Modell','Efficiency':'Kostenorientiert','Power':'Hohe Leistung · höhere Kosten'}}

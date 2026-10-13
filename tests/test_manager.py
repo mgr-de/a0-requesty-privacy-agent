@@ -254,6 +254,6 @@ def test_native_profile_editor_without_chat_id_and_scoped_menu_choice(setup,monk
     a=Agent(0,AgentConfig(profile='agent0',mcp_servers=''))
     result=asyncio.run(Presets(None,None).process({'context_id':a.context.id},None))
     assert result['scoped']['allowed'],result['scoped']['reasons']
-    assert result['scoped']['name']=='Privacy Agent · gemeinsam'
+    assert result['scoped']['name']=='A0 Privacy · gemeinsam'
     assert result['scoped']['models']['main']['name']==identifier
     assert 'SYNTHETIC-SECRET' not in json.dumps(result)
