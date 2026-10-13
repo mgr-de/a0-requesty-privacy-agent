@@ -17,6 +17,7 @@ def block(context_id):
 
 def install():
     from api.agent_profile_set import SetAgentProfile
+    from api.chat_remove import RemoveChat
     from helpers import projects,subagents
     from plugins._agent_editor.helpers import editor
     from . import profile_exceptions as policy
@@ -38,6 +39,17 @@ def install():
             return result
         return changed
     attach(SetAgentProfile,'process',profile_change)
+    def chat_remove(previous):
+        @wraps(previous)
+        async def removed(handler,input,request):
+            scope={'context_id':input.get('context'),'active':True}
+            token=policy.deleting_chat.set(scope)
+            try:return await previous(handler,input,request)
+            finally:
+                scope['active']=False
+                policy.deleting_chat.reset(token)
+        return removed
+    attach(RemoveChat,'process',chat_remove)
     def project_change(previous):
         @wraps(previous)
         def changed(*args,**kwargs):

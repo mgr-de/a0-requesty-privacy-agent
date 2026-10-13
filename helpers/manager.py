@@ -328,6 +328,8 @@ def apply_model_config(data,agent):
 
 def enforce_call(data,method):
     if not active():return
+    from .profile_exceptions import require_model_transport
+    require_model_transport()
     require_components()
     from usr.plugins.requesty.helpers.runtime_guard import guard_function,is_local_route
     from usr.plugins.requesty.helpers.call_context import tool_agent
@@ -388,6 +390,8 @@ def install_legacy_bridge():
             @wraps(previous)
             def checked(wrapper,*args,**kwargs):
                 if active():
+                    from .profile_exceptions import require_model_transport
+                    require_model_transport()
                     require_components()
                     from usr.plugins.local_privacy_guard.helpers.model_guard import filtered_call,is_local
                     proof=filtered_call.get()

@@ -309,6 +309,40 @@ def test_local_chat_policy_independent_of_optional_login_configuration(policy,mo
     with pytest.raises(ValueError):p.effective(a)
 
 
+def test_revoked_chat_native_delete_uses_only_scoped_masked_initialization(policy,monkeypatch):
+    p,m,root=policy
+    from api.chat_remove import RemoveChat
+    from helpers import persist_chat,state_monitor_integration
+    from helpers.task_scheduler import TaskScheduler
+    from agent import AgentContext
+    from flask import current_app
+    from usr.plugins.requesty_privacy_agent.helpers import exception_lifecycle
+    a=approved(p);p.revoke(p.PROFILE)
+    with pytest.raises(ValueError):p.effective(a)
+    scope={'context_id':a.context.id,'active':True}
+    token=p.deleting_chat.set(scope)
+    try:
+        assert p.effective(a)['mode']=='masked'
+        with pytest.raises(ValueError,match='deletion'):m.enforce_call({},'unified_call')
+        scope['active']=False
+        with pytest.raises(ValueError):p.effective(a)
+    finally:p.deleting_chat.reset(token)
+    async def reload():return None
+    scheduler=SimpleNamespace(cancel_tasks_by_context=lambda *args,**kwargs:None,
+        reload=reload,get_tasks_by_context_id=lambda context_id:[])
+    monkeypatch.setattr(TaskScheduler,'get',lambda:scheduler)
+    monkeypatch.setattr(persist_chat,'remove_chat',lambda context_id:None)
+    monkeypatch.setattr(state_monitor_integration,'mark_dirty_all',lambda **kwargs:None)
+    exception_lifecycle.install()
+    with current_app.test_request_context('/api/chat_remove'):
+        result=asyncio.run(RemoveChat(None,None).process({'context':a.context.id},None))
+    assert result['message']=='Context removed.'
+    assert AgentContext.get(a.context.id) is None
+    assert a.context.id not in p.state()['chats']
+    assert p.deleting_chat.get() is None
+    with pytest.raises(ValueError):p.effective(a)
+
+
 def test_project_change_blocks_and_fresh_binding_is_separate(policy, monkeypatch):
     p, m, root = policy
     a = approved(p)
