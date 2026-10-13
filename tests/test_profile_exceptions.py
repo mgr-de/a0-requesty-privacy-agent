@@ -352,6 +352,16 @@ def test_revoked_chat_native_delete_uses_only_scoped_masked_initialization(polic
     with pytest.raises(ValueError):p.effective(a)
 
 
+def test_native_reset_adapter_handles_revoked_policy_without_api_class_bridge(policy):
+    p,m,root=policy
+    from flask import current_app
+    a=approved(p);p.revoke(p.PROFILE)
+    with current_app.test_request_context('/api/chat_remove'):
+        a.context.reset()
+    assert p.deleting_chat.get() is None
+    with pytest.raises(ValueError):p.effective(a)
+
+
 def test_project_change_blocks_and_fresh_binding_is_separate(policy, monkeypatch):
     p, m, root = policy
     a = approved(p)
