@@ -11,7 +11,7 @@ import threading
 LOCK=threading.RLock()
 SHARED=('', 'privacy_agent_shared')
 MINIMUM={'region':'eu','strict_region':True,'no_retention':True,'no_training':True,'require_requesty_zdr':False}
-MIN_VERSIONS={'requesty':(0,6,1),'local_privacy_guard':(1,9,0)}
+MIN_VERSIONS={'requesty':(0,9,0),'local_privacy_guard':(0,9,0)}
 
 def directory():
     from helpers import files
@@ -71,7 +71,7 @@ def components():
 
 def require_components():
     if not all(item['compatible'] for item in components().values()):
-        raise ValueError('Privacy Agent requires compatible Requesty and Local Privacy Guard plugins. Install or restore its components.')
+        raise ValueError('Privacy Agent requires compatible A0 Privacy Suite Model Gateway and Local Guard plugins. Install or restore its components.')
     from usr.plugins.requesty.helpers import runtime_guard
     from usr.plugins.local_privacy_guard.helpers import model_guard
     if getattr(runtime_guard,'INSTANCE_API_VERSION',None)!=2 or getattr(model_guard,'INSTANCE_API_VERSION',None)!=2:

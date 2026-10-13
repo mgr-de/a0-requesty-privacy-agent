@@ -86,7 +86,7 @@ def install():
     def providers_factory(original):
         @wraps(original)
         def checked(*args,**kwargs):
-            return [{'value':'requesty_guarded','label':'Requesty'}] if n.enabled() else original(*args,**kwargs)
+            return [{'value':'requesty_guarded','label':'Requesty (A0 Privacy)'}] if n.enabled() else original(*args,**kwargs)
         return checked
     bind(mc,'get_chat_providers',providers_factory)
     def embedding_providers_factory(original):
@@ -154,7 +154,7 @@ def install():
                     if kind=='presets' and isinstance(result,dict):
                         result['privacy_presets']={'active':True,'key_source':'Central Requesty key; an explicitly configured profile key takes precedence.'}
                     if kind=='config' and isinstance(result,dict):
-                        result['chat_providers']=[{'value':'requesty_guarded','label':'Requesty'}]
+                        result['chat_providers']=[{'value':'requesty_guarded','label':'Requesty (A0 Privacy)'}]
                         result['embedding_providers']=[{'value':'huggingface','label':'Local HuggingFace'}]
                         result['chat_provider_details']={'requesty_guarded':{'api_key_mode':'none'}}
                         result['privacy_presets']={'active':True,'key_source':'Central Requesty key; an explicitly configured profile key takes precedence.'}

@@ -1,13 +1,14 @@
-<html><head><title>Requesty Privacy Agent</title>
+<html><head><title>A0 Privacy Suite - Manager</title>
 <link rel="stylesheet" href="/plugins/requesty_privacy_agent/webui/privacy-settings.css">
 <script type="module" src="/plugins/requesty_privacy_agent/webui/privacy-agent-store.js"></script>
 </head><body><div x-data>
 <template x-if="$store.privacyAgent"><div class="privacy-settings" x-init="$store.privacyAgent.open()" x-destroy="$store.privacyAgent.cleanup()" :aria-busy="$store.privacyAgent.busy">
-<h2 class="section-title">Datenschutz für diesen Agenten</h2>
+<h2 class="section-title">A0 Privacy Suite - Manager</h2>
+<p>Private Vorabversion 0.9.0. Unabhängiges Projekt, kein Produkt von Requesty und keine Zugehörigkeit zum Anbieter.</p>
 <p>Einmal einrichten: Mindestregeln gelten für alle bestehenden und neuen Profile dieser Agent-Zero-Installation. Eigene zulässige Modelle bleiben möglich.</p>
 <p><strong x-text="$store.privacyAgent.status?.active ? 'Installationsweite Mindestregeln aktiv' : 'Installationsweite Mindestregeln noch nicht aktiv'"></strong></p>
 <fieldset :disabled="$store.privacyAgent.busy"><legend>1 · Komponenten</legend>
-<template x-for="(component,name) in ($store.privacyAgent.status?.components||{})" :key="name"><p x-text="name+' · '+(component.compatible ? 'bereit' : component.installed ? 'Aktualisierung erforderlich' : 'fehlt')+' '+component.version"></p></template>
+<template x-for="(component,name) in ($store.privacyAgent.status?.components||{})" :key="name"><p x-text="({'requesty':'Model Gateway','local_privacy_guard':'Local Guard'}[name]||name)+' · '+(component.compatible ? 'bereit' : component.installed ? 'Aktualisierung erforderlich' : 'fehlt')+' '+component.version"></p></template>
 <button class="btn" type="button" @click="$store.privacyAgent.action('install_dependencies')">Fehlende Plugins installieren</button>
 <p>Vorhandene Plugins und ihre Einstellungen bleiben erhalten. Veraltete Versionen bitte über die native Plugin-Verwaltung aktualisieren. Nach Installation Agent Zero neu starten.</p>
 </fieldset>

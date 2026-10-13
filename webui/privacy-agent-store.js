@@ -49,7 +49,7 @@ export const store=createStore('privacyAgent',{
             if(action==='catalog'){this.models=result.models;this.loaded=true;}
             else if(action==='migration_preview'){
                 this.preview=result.preview;
-                this.rows=[...(result.preview.presets||[]).filter(p=>p.chat?.provider==='requesty_guarded'&&!p.name.startsWith('Requesty bisherige Einrichtung')).map(p=>({name:p.name,main:p.chat?.name||'',utility:p.utility?.name||'',vision:p.vision?.name||''})),...(result.preview.blocked||[]).map(p=>({...p}))];
+                this.rows=[...(result.preview.presets||[]).filter(p=>p.chat?.provider==='requesty_guarded'&&!p.name.startsWith('Requesty bisherige Einrichtung')&&!p.name.startsWith('A0 Privacy bisherige Einrichtung')).map(p=>({name:p.name,main:p.chat?.name||'',utility:p.utility?.name||'',vision:p.vision?.name||''})),...(result.preview.blocked||[]).map(p=>({...p}))];
                 this.reviewed=JSON.stringify({overrides:this.overrides(),preserve:this.preserveCurrent,languages:this.languages});
             }
             else{
