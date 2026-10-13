@@ -5,7 +5,8 @@ export const store=createStore('privacyAgent',{
     status:null,busy:false,epoch:0,key:'',models:[],loaded:false,
     main:'',utility:'',vision:'',languages:['en','de'],confirmAll:false,confirmDisable:false,
     account:{eu_gateway:false,requesty_zdr:false,provider_zdr:false,approved_eu_models:false},
-    preview:null,rows:[],preserveCurrent:true,reviewed:'',backupId:'',confirmUnmasked:false,
+    preview:null,rows:[],preserveCurrent:true,reviewed:'',backupId:'',confirmUnmasked:false,confirmCleanup:false,
+    async cleanupAdapters(){if(!this.confirmCleanup)return;await this.action('cleanup_adapters',{confirmation:'REMOVE_INACTIVE_OWNED_ADAPTERS'});this.confirmCleanup=false;},
     async createDeveloperChat(){
         if(this.busy)return;
         this.busy=true;const epoch=this.epoch;
@@ -24,7 +25,7 @@ export const store=createStore('privacyAgent',{
     async loadMigration(){await this.action('catalog');await this.action('migration_preview',{preserve_current:this.preserveCurrent});},
     async refreshMigration(){await this.action('migration_preview',{overrides:this.overrides(),preserve_current:this.preserveCurrent});},
     async applyMigration(){if(this.preview&&this.migrationCurrent())await this.action('migration_apply',{fingerprint:this.preview.fingerprint,overrides:this.overrides(),preserve_current:this.preserveCurrent,languages:[...this.languages]});},
-    cleanup(){this.preview=null;this.rows=[];this.reviewed='';this.epoch++;this.key='';this.busy=false;this.models=[];this.loaded=false;this.confirmAll=false;this.confirmDisable=false;this.confirmUnmasked=false;},
+    cleanup(){this.preview=null;this.rows=[];this.reviewed='';this.epoch++;this.key='';this.busy=false;this.models=[];this.loaded=false;this.confirmAll=false;this.confirmDisable=false;this.confirmUnmasked=false;this.confirmCleanup=false;},
     async open(){this.cleanup();await this.action('status');},
     showProviders:false,
     choices(vision=false){

@@ -4,7 +4,7 @@ from test_manager import setup
 
 def test_release_requires_fixed_production_detector():
     from usr.plugins.requesty_privacy_agent.helpers.manager import MIN_VERSIONS
-    assert MIN_VERSIONS['local_privacy_guard'] == (0,9,2)
+    assert MIN_VERSIONS['local_privacy_guard'] == (0,9,3)
 
 
 def test_published_dependency_pins_satisfy_component_floor():

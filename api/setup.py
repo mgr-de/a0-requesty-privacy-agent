@@ -6,7 +6,7 @@ class Setup(ApiHandler):
     async def process(self,input,request):
         try:
             command=input.get('action','status')
-            if command in {'create-developer-profile','grant','revoke'}:
+            if command in {'create-developer-profile','grant','revoke','repair_adapters','cleanup_adapters'}:
                 # Flask session context is verified before entering the worker.
                 from usr.plugins.requesty_privacy_agent.helpers.profile_exceptions import require_operator
                 require_operator()
@@ -31,6 +31,8 @@ class Setup(ApiHandler):
                         if input.get('confirm_all_profiles') is not True:raise ValueError('Confirm that all existing and future profiles will be affected.')
                         manager.activate()
                     elif command=='deactivate':manager.deactivate(input.get('confirmation'))
+                    elif command=='repair_adapters':manager.repair_adapters()
+                    elif command=='cleanup_adapters':manager.cleanup_adapters(input.get('confirmation'))
                     elif command=='account':
                         from usr.plugins.requesty.helpers.account import confirmation
                         manager.write('account.json',confirmation(input.get('settings')))

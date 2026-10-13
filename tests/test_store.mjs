@@ -55,3 +55,14 @@ test('optional login is recommended without disabling Developer controls',async(
  assert.ok(disabled.every(expression=>!expression.includes('login_configured')));
  assert.match(html,/confirmUnmasked/);
 });
+
+
+test('inactive owned cleanup requires explicit consent and never toggles policy',async()=>{
+ const actions=[];const store=setup(async(path,input)=>{actions.push(input);return {ok:true};});
+ await store.cleanupAdapters();assert.equal(actions.length,0);
+ store.confirmCleanup=true;await store.cleanupAdapters();
+ assert.equal(actions[0].action,'cleanup_adapters');assert.equal(actions[0].confirmation,'REMOVE_INACTIVE_OWNED_ADAPTERS');
+ assert.equal(store.confirmCleanup,false);
+ const html=await readFile(new URL('../webui/config.html',import.meta.url),'utf8');
+ assert.match(html,/activation_state==='broken'/);assert.match(html,/manager_adapters/);
+});
