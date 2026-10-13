@@ -252,3 +252,15 @@ def test_dynamic_native_api_loader_uses_the_same_policy_and_short_catalog(native
     with app.test_request_context('/api/plugins/_model_config/model_presets',method='POST',json={'action':'save','presets':bad}):
         assert asyncio.run(save.handle_request(request)).status_code==400
     assert mc.get_presets()==before
+
+
+def test_native_presets_and_dynamic_profile_lifecycle_share_owned_api(native):
+    migrate(native)
+    from usr.plugins.requesty_privacy_agent.helpers import exception_lifecycle
+    try:
+        exception_lifecycle.install()
+        assert preset_bridge.healthy()
+        preset_bridge.install()
+        exception_lifecycle.install()
+        assert preset_bridge.healthy()
+    finally:exception_lifecycle.remove()

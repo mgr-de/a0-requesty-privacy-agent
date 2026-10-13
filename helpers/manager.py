@@ -11,7 +11,7 @@ import threading
 LOCK=threading.RLock()
 SHARED=('', 'privacy_agent_shared')
 MINIMUM={'region':'eu','strict_region':True,'no_retention':True,'no_training':True,'require_requesty_zdr':False}
-MIN_VERSIONS={'requesty':(0,9,1),'local_privacy_guard':(0,9,1)}
+MIN_VERSIONS={'requesty':(0,9,2),'local_privacy_guard':(0,9,2)}
 
 def directory():
     from helpers import files
@@ -370,6 +370,7 @@ async def enforce_output(data):
     if active():require_components()
 
 _LEGACY_BRIDGES={}
+_ADAPTERS_READY=False
 
 def install_legacy_bridge():
     """Guard existing bare LangChain objects, which lack extensible call points.
@@ -377,6 +378,13 @@ def install_legacy_bridge():
     This opt-in instance bridge only checks/filter-passage ownership. The
     companions continue to perform routing, masking and output restoration.
     """
+    global _ADAPTERS_READY
+    if active() and not _ADAPTERS_READY:
+        with LOCK:
+            if not _ADAPTERS_READY:
+                from .adapters import install
+                install()
+                _ADAPTERS_READY=True
     from models import LiteLLMChatWrapper
     from usr.plugins.local_privacy_guard.helpers import transport_admission
     transport_admission.install()
