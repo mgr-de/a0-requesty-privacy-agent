@@ -4,7 +4,7 @@
 </head><body><div x-data>
 <template x-if="$store.privacyAgent"><div class="privacy-settings" x-init="$store.privacyAgent.open()" x-destroy="$store.privacyAgent.cleanup()" :aria-busy="$store.privacyAgent.busy">
 <h2 class="section-title">A0 Privacy Suite - Manager</h2>
-<p>Private Vorabversion 0.9.0. Unabhängiges Projekt, kein Produkt von Requesty und keine Zugehörigkeit zum Anbieter.</p>
+<p>Community-Beta 0.9.1. Unabhängiges Projekt, kein Produkt von Requesty und keine Zugehörigkeit zum Anbieter.</p>
 <p>Einmal einrichten: Mindestregeln gelten für alle bestehenden und neuen Profile dieser Agent-Zero-Installation. Eigene zulässige Modelle bleiben möglich.</p>
 <p><strong x-text="$store.privacyAgent.status?.active ? 'Installationsweite Mindestregeln aktiv' : 'Installationsweite Mindestregeln noch nicht aktiv'"></strong></p>
 <fieldset :disabled="$store.privacyAgent.busy"><legend>1 · Komponenten</legend>

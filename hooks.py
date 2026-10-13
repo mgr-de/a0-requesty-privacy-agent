@@ -2,6 +2,11 @@ from usr.plugins.requesty_privacy_agent.helpers import manager
 
 def install(**kwargs):
     # Installation alone never activates an installation-wide policy.
+    if manager.active():
+        manager.require_components()
+        from usr.plugins.requesty_privacy_agent.helpers.adapters import install as install_adapters
+        install_adapters()
+        manager.install_legacy_bridge()
     return {'active':manager.active(),'components':manager.components()}
 
 def pre_update(**kwargs):
