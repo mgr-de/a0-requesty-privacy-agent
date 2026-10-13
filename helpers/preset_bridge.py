@@ -177,7 +177,7 @@ def install():
         async def checked(self,request):
             kinds={'model_presets':'presets','model_override':'override','model_config_get':'config','model_search':'search'}
             kind=kinds.get(request.path.removeprefix('/api/plugins/_model_config/')) if request.path.startswith('/api/plugins/_model_config/') else None
-            if not n.enabled() or kind is None:
+            if kind is None or not n.enabled():
                 result=await original(self,request)
                 from .exception_lifecycle import profile_response
                 profile_response(request,result)

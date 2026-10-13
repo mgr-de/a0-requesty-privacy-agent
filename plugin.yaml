@@ -1,7 +1,7 @@
 name: requesty_privacy_agent
 title: A0 Privacy Suite - Manager
 description: One setup for all profiles in this Agent Zero installation. Uses the Model Gateway and Local Guard components; images and tool transfers have separate limits.
-version: 0.9.2
+version: 0.9.3
 settings_sections:
   - agent
 per_project_config: false

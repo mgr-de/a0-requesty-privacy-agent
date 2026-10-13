@@ -11,7 +11,7 @@ import threading
 LOCK=threading.RLock()
 SHARED=('', 'privacy_agent_shared')
 MINIMUM={'region':'eu','strict_region':True,'no_retention':True,'no_training':True,'require_requesty_zdr':False}
-MIN_VERSIONS={'requesty':(0,9,2),'local_privacy_guard':(0,9,2)}
+MIN_VERSIONS={'requesty':(0,9,3),'local_privacy_guard':(0,9,3)}
 
 def directory():
     from helpers import files
@@ -22,7 +22,7 @@ def directory():
     return target
 
 def read(name,default=None):
-    if name not in {'active.json','config.json','setup.json','credentials.json','local.json','account.json','profile-exceptions.json'}:
+    if name not in {'active.json','config.json','setup.json','credentials.json','local.json','account.json','profile-exceptions.json','activation-record.json'}:
         raise ValueError('Unknown Privacy Agent asset.')
     path=directory()/name
     if not path.exists():return default
@@ -44,7 +44,8 @@ def write(name,value):
         if os.path.exists(temporary):os.unlink(temporary)
 
 def active():
-    return read('active.json',{}).get('active') is True
+    from .activation_state import activation_state
+    return activation_state(directory().parent)=='active'
 
 def components():
     from helpers import files
@@ -72,6 +73,10 @@ def components():
 def require_components():
     if not all(item['compatible'] for item in components().values()):
         raise ValueError('Privacy Agent requires compatible A0 Privacy Suite Model Gateway and Local Guard plugins. Install or restore its components.')
+    if active():
+        from .adapters import integrity
+        if not integrity(directory().parent)['intact']:
+            raise ValueError('Privacy Agent adapters are incomplete or changed. Use the central adapter repair or restore trusted files; model calls remain blocked.')
     from usr.plugins.requesty.helpers import runtime_guard
     from usr.plugins.local_privacy_guard.helpers import model_guard
     if getattr(runtime_guard,'INSTANCE_API_VERSION',None)!=2 or getattr(model_guard,'INSTANCE_API_VERSION',None)!=2:
@@ -161,15 +166,25 @@ def filter_check(config):
     return {'names':'available','embeddings':'available_locally','languages':scanner.get_loaded_languages()}
 
 def public_status():
+    from .activation_state import activation_state
+    from .adapters import integrity
+    try:state=activation_state(directory().parent);state_error=None
+    except ValueError as error:state='broken';state_error=str(error)
+    adapters=integrity(directory().parent)
+    component_status=components()
+    from helpers import plugins
+    diagnostics={'activation_state':state,'activation_error':state_error,
+        'manager_enabled':'requesty_privacy_agent' in plugins.get_enabled_plugins(None),
+        'manager_adapters':adapters,'components_compatible':all(c['compatible'] for c in component_status.values()),'repair_required':state=='broken' or (state=='active' and (not adapters['intact'] or not all(c['compatible'] for c in component_status.values())))}
     setup=read('setup.json',{})
-    if setup.get('native_presets'):
+    if setup.get('native_presets') and state!='broken' and (state!='active' or adapters['intact']) and all(c['compatible'] for c in component_status.values()):
         from plugins._model_config.helpers import model_config as mc
         config=mc.get_config()
         setup={**setup,'preset_name':mc.get_configured_preset_name(),'models':{slot:config.get(section,{}) for slot,section in [('chat','chat_model'),('utility','utility_model'),('vision','vision_model')]}}
     account=read('account.json',{})
     public_models={slot:{field:conf.get(field) for field in ('provider','name','api_base','ctx_length','vision','override_main') if field in conf}
                    for slot,conf in setup.get('models',{}).items() if slot in {'chat','utility','vision'} and isinstance(conf,dict)}
-    return {'active':active(),'components':components(),'has_key':bool(read('credentials.json',{}).get('key')),
+    return {'active':state=='active','diagnostics':diagnostics,'components':component_status,'has_key':bool(read('credentials.json',{}).get('key')),
         'models':public_models,'native_presets':setup.get('native_presets',False),'preset_name':setup.get('preset_name'),'local':read('local.json',{}),'account':account,
         'account_verification':account.get('verification','unverified'),
         'profile_exceptions':__import__(__package__+'.profile_exceptions',fromlist=['public']).public(),
@@ -263,6 +278,7 @@ def configure(value):
 
 def activate():
     require_components()
+    if active():return
     setup=read('setup.json',{})
     local=read('local.json',{})
     if not setup.get('active') or not local:raise ValueError('Complete the common setup first.')
@@ -280,6 +296,13 @@ def activate():
         from .native_presets import validate
         from plugins._model_config.helpers import model_config as mc
         validate(mc.resolve_preset(mc.get_configured_preset_name()),catalog)
+    from agent import AgentContext
+    if any(context.is_running() for context in AgentContext.all()):
+        raise ValueError('Wait until running chats finish before activating the common rules.')
+    # Establish a valid inactive state before creating durable enforcement
+    # evidence. A partial preparation never becomes implicit activation.
+    write('activation-record.json',{'schema':1,'managed':True})
+    write('active.json',{'active':False})
     from usr.plugins.requesty_privacy_agent.helpers.adapters import install
     install()
     install_legacy_bridge()
@@ -292,6 +315,7 @@ def activate():
     for context in list(AgentContext.all()):
         if context.agent0:
             mapping_identity(context.agent0);save_tmp_chat(context)
+    write('activation-record.json',{'schema':1,'managed':True})
     write('active.json',{'active':True,'activated_at':datetime.now(timezone.utc).isoformat(),'api_version':1})
     if setup.get('native_presets'):
         from . import preset_bridge
@@ -299,9 +323,11 @@ def activate():
 
 def deactivate(confirmation):
     if confirmation!='DISABLE_INSTANCE_PROTECTION':raise ValueError('Confirm that all profiles lose the instance minimum rules.')
+    active()  # A damaged state must be restored, never guessed as disabled.
     from agent import AgentContext
     if any(context.is_running() for context in AgentContext.all()):
         raise ValueError('Wait until running chats finish before changing the instance rules.')
+    write('activation-record.json',{'schema':1,'managed':True})
     write('active.json',{'active':False})
     remove_legacy_bridge()
     from . import preset_bridge
@@ -382,6 +408,7 @@ def install_legacy_bridge():
     if active() and not _ADAPTERS_READY:
         with LOCK:
             if not _ADAPTERS_READY:
+                write('activation-record.json',{'schema':1,'managed':True})
                 from .adapters import install
                 install()
                 _ADAPTERS_READY=True
@@ -432,3 +459,19 @@ def remove_legacy_bridge():
     for name,(original,proxy) in list(_LEGACY_BRIDGES.items()):
         if getattr(LiteLLMChatWrapper,name) is proxy:setattr(LiteLLMChatWrapper,name,original)
         del _LEGACY_BRIDGES[name]
+
+
+def repair_adapters():
+    # Broken activation is never converted into implicit deactivation or activation.
+    from .activation_state import activation_state
+    if activation_state(directory().parent)=='unconfigured':
+        raise ValueError('Complete central setup before repairing its owned adapters.')
+    from .adapters import install
+    return install()
+
+
+def cleanup_adapters(confirmation):
+    if confirmation!='REMOVE_INACTIVE_OWNED_ADAPTERS':raise ValueError('Confirm removal of inactive owned adapters.')
+    if active():raise ValueError('Deactivate centrally before removing owned adapters.')
+    from .adapters import install
+    return install(remove=True)

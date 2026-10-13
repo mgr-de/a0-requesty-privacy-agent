@@ -4,9 +4,21 @@
 </head><body><div x-data>
 <template x-if="$store.privacyAgent"><div class="privacy-settings" x-init="$store.privacyAgent.open()" x-destroy="$store.privacyAgent.cleanup()" :aria-busy="$store.privacyAgent.busy">
 <h2 class="section-title">A0 Privacy Suite - Manager</h2>
-<p>Community-Beta 0.9.2. Unabhängiges Projekt, kein Produkt von Requesty und keine Zugehörigkeit zum Anbieter.</p>
+<p>Community-Beta 0.9.3. Unabhängiges Projekt, kein Produkt von Requesty und keine Zugehörigkeit zum Anbieter.</p>
 <p>Einmal einrichten: Mindestregeln gelten für alle bestehenden und neuen Profile dieser Agent-Zero-Installation. Eigene zulässige Modelle bleiben möglich.</p>
-<p><strong x-text="$store.privacyAgent.status?.active ? 'Installationsweite Mindestregeln aktiv' : 'Installationsweite Mindestregeln noch nicht aktiv'"></strong></p>
+<p><strong x-text="$store.privacyAgent.status?.diagnostics?.activation_state==='broken' ? 'Schutzstatus beschädigt · Modellaufrufe gesperrt' : $store.privacyAgent.status?.active ? 'Installationsweite Mindestregeln aktiv' : 'Installationsweite Mindestregeln noch nicht aktiv'"></strong></p>
+<fieldset><legend>Schutzinstallation prüfen und reparieren</legend>
+<p x-text="'Plugin: '+($store.privacyAgent.status?.diagnostics?.manager_enabled ? 'eingeschaltet' : 'ausgeschaltet')"></p>
+<p x-text="'Zentraler Schutz: '+({'active':'aktiv','inactive':'bewusst deaktiviert','unconfigured':'noch nicht eingerichtet','broken':'beschädigt – Wiederherstellung erforderlich'}[$store.privacyAgent.status?.diagnostics?.activation_state]||'Status wird geprüft')"></p>
+<p x-text="'Eigene Prüfhaken: '+($store.privacyAgent.status?.diagnostics?.manager_adapters?.intact ? 'vollständig' : 'fehlen, wurden verändert oder sind noch nicht eingerichtet')"></p>
+<p x-show="$store.privacyAgent.status?.diagnostics?.activation_state==='broken'">Die gespeicherte Schutzkonfiguration aus einer vertrauenswürdigen Sicherung wiederherstellen. Ein beschädigter Zustand wird niemals automatisch abgeschaltet. Die Reparatur der Prüfhaken ersetzt keine verlorene Schutzkonfiguration.</p>
+<details x-show="$store.privacyAgent.status?.diagnostics?.activation_error"><summary>Hinweis zur Wiederherstellung</summary><p x-text="$store.privacyAgent.status?.diagnostics?.activation_error"></p></details>
+<button class="btn" type="button" @click="$store.privacyAgent.action('repair_adapters')" :disabled="$store.privacyAgent.busy || ['broken','unconfigured'].includes($store.privacyAgent.status?.diagnostics?.activation_state)">Eigene Prüfhaken wiederherstellen</button>
+<p>Nur fehlende oder nachweislich eigene unveränderte Dateien werden wiederhergestellt. Bei fremden Änderungen ist eine manuelle Prüfung erforderlich. Sprachmodelle und Begleitplugins werden dadurch nicht installiert.</p>
+<label><input type="checkbox" x-model="$store.privacyAgent.confirmCleanup" :disabled="$store.privacyAgent.status?.active || $store.privacyAgent.status?.diagnostics?.activation_state==='broken'"> Ich möchte nur inaktive, nachweislich eigene Prüfhaken entfernen. Schlüssel, Profile und Zuordnungen bleiben erhalten.</label>
+<button class="btn" type="button" @click="$store.privacyAgent.cleanupAdapters()" :disabled="$store.privacyAgent.busy || !$store.privacyAgent.confirmCleanup || $store.privacyAgent.status?.active || $store.privacyAgent.status?.diagnostics?.activation_state==='broken'">Inaktive Prüfhaken bereinigen</button>
+<p>Bei aktivem Schutz zuerst bewusst zentral deaktivieren. Ein normaler Plugin-Schalter ändert die zentrale Schutzentscheidung nicht.</p>
+</fieldset>
 <fieldset :disabled="$store.privacyAgent.busy"><legend>1 · Komponenten</legend>
 <template x-for="(component,name) in ($store.privacyAgent.status?.components||{})" :key="name"><p x-text="({'requesty':'Model Gateway','local_privacy_guard':'Local Guard'}[name]||name)+' · '+(component.compatible ? 'bereit' : component.installed ? 'Aktualisierung erforderlich' : 'fehlt')+' '+component.version"></p></template>
 <button class="btn" type="button" @click="$store.privacyAgent.action('install_dependencies')">Fehlende Plugins installieren</button>
@@ -69,7 +81,7 @@
 <p>Widerruf sperrt weitere Modellaufrufe dieser Chats. Bereits zugelassene Aufrufe können abschließen. Danach einen neuen geschützten Chat beginnen. Profil- oder Projektwechsel eines unmaskierten Chats sperrt ebenfalls weitere Aufrufe.</p>
 </div></template></fieldset>
 <h3>Schutzstatus und Grenzen</h3>
-<p x-text="$store.privacyAgent.status?.active ? 'Modellroute: EU-Requesty-Anforderungen aktiv. PII-Maskierung ist Standard; freigegebene neue Developer-Chats haben eine ausdrückliche Ausnahme. Secret-Prüfung und lokale Embeddings bleiben vorgeschrieben.' : 'Installationsweite Regeln inaktiv. Der Schutz einzelner Profile hängt von deren eigener Einrichtung ab.'"></p>
+<p x-text="$store.privacyAgent.status?.diagnostics?.activation_state==='broken' ? 'Schutzkonfiguration beschädigt. Unterstützte Modellaufrufe sind gesperrt; vertrauenswürdige Sicherung wiederherstellen.' : $store.privacyAgent.status?.active ? 'Modellroute: EU-Requesty-Anforderungen aktiv. PII-Maskierung ist Standard; freigegebene neue Developer-Chats haben eine ausdrückliche Ausnahme. Secret-Prüfung und lokale Embeddings bleiben vorgeschrieben.' : 'Installationsweite Regeln inaktiv. Der Schutz einzelner Profile hängt von deren eigener Einrichtung ab.'"></p>
 <p x-text="'Gemeinsame Modelle: Main '+($store.privacyAgent.status?.models?.chat?.name || 'nicht eingerichtet')+' · Utility '+($store.privacyAgent.status?.models?.utility?.name || 'nicht eingerichtet')+' · Vision '+($store.privacyAgent.status?.models?.vision?.name || 'nicht eingerichtet')"></p>
 <p>Modelle und aktive Presets stehen im nativen Chat-Menü und A0-Preset-Editor. Nicht zulässige Änderungen werden vor dem Speichern abgelehnt.</p>
 <p>Bilder werden beim ausgewählten Dienst verarbeitet. Die lokale Textmaskierung schützt ihren Bildinhalt nicht.</p>
