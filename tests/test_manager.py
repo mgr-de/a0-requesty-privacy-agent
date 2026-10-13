@@ -257,3 +257,57 @@ def test_native_profile_editor_without_chat_id_and_scoped_menu_choice(setup,monk
     assert result['scoped']['name']=='A0 Privacy · gemeinsam'
     assert result['scoped']['models']['main']['name']==identifier
     assert 'SYNTHETIC-SECRET' not in json.dumps(result)
+
+
+
+def test_gateway_only_mode_preserves_central_floor_without_local_filter(setup,monkeypatch):
+    m,scope,path=setup
+    from usr.plugins.local_privacy_guard.helpers import instance
+    m.write('mode.json',{'local_guard_enabled':False})
+    assert not m.local_guard_enabled()
+    assert instance.manager() is None
+    assert m.local_config(None) is None
+    assert scope.enabled(('','new-profile'))
+    assert m.effective_policy({'region':'us','strict_region':False,'no_retention':False,'no_training':False})==m.MINIMUM
+    m.write('mode.json',{'local_guard_enabled':'false'})
+    with pytest.raises(ValueError,match='Invalid text protection'):m.local_guard_enabled()
+
+
+def test_gateway_only_calls_require_native_owner_and_reject_changed_scope(setup,monkeypatch):
+    m,scope,path=setup
+    import weakref
+    from agent import Agent,AgentConfig
+    from usr.plugins.requesty.helpers import runtime_guard as rg
+    from usr.plugins.requesty.helpers.wrapper import GuardedRequestyWrapper
+    import models
+    m.write('mode.json',{'local_guard_enabled':False})
+    m.write('setup.json',{'active':True,'native_presets':True})
+    a=Agent(0,AgentConfig(profile='agent0',mcp_servers=''))
+    wrapper=GuardedRequestyWrapper(model='synthetic/eu',provider='openai',model_config=models.ModelConfig(type=models.ModelType.CHAT,provider='requesty_guarded',name='synthetic/eu'),api_base='https://router.eu.requesty.ai/v1')
+    wrapper._requesty_scope=m.requesty_owner(a)
+    wrapper._requesty_policy_scope=scope.from_agent(a)
+    wrapper._requesty_policy_bound=True
+    data={'args':(wrapper,),'kwargs':{}}
+    with pytest.raises(ValueError,match='no protected chat owner'):m.enforce_call(data,'unified_turn')
+    wrapper._requesty_agent=weakref.ref(a)
+    m.enforce_call(data,'unified_turn')
+    wrapper._requesty_scope=('','foreign')
+    with pytest.raises(ValueError,match='another profile setup'):m.enforce_call(data,'unified_turn')
+
+
+def test_gateway_only_retains_provider_restrictions(setup,monkeypatch):
+    m,scope,path=setup
+    m.write('mode.json',{'local_guard_enabled':False})
+    from plugins._model_config.helpers import model_config as mc
+    from usr.plugins.requesty_privacy_agent.helpers import preset_bridge
+    try:
+        preset_bridge.install()
+        assert [p['value'] for p in mc.get_chat_providers()]==['requesty_guarded']
+    finally:preset_bridge.remove()
+
+
+
+def test_gateway_only_requires_explicit_mode_confirmation(setup):
+    m,scope,path=setup
+    with pytest.raises(ValueError,match='Confirm unmasked'):m.enable_gateway_only('DISABLE_INSTANCE_PROTECTION')
+    assert m.local_guard_enabled()

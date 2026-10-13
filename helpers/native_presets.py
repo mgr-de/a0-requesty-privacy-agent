@@ -170,8 +170,9 @@ def apply(expected, overrides=None, preserve_current=True, languages=None):
         atomic_write(path,json.dumps({'before':before,'written':written},ensure_ascii=False));path.chmod(0o600)
     save_backup()
     try:
-        if languages:m.configure_local(languages)
-        m.filter_check(m.read('local.json',{}))
+        if m.local_guard_enabled():
+            if languages:m.configure_local(languages)
+            m.filter_check(m.read('local.json',{}))
         mc.save_presets(candidate['presets'])
         plugins.save_plugin_config('_model_config','','',{'model_preset':candidate['selected']})
         from usr.plugins.requesty.helpers import scope

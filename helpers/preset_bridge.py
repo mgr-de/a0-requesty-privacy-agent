@@ -42,7 +42,7 @@ def install():
     def embedding_factory(original):
         @wraps(original)
         def checked(provider,name,model_config=None,**kwargs):
-            if n.enabled():
+            if m.active():
                 expected=n.embedding()
                 if provider!=expected['provider'] or name!=expected['name'] or kwargs:
                     raise ValueError('Use the configured local embedding model without custom transport parameters.')
@@ -86,7 +86,7 @@ def install():
     def providers_factory(original):
         @wraps(original)
         def checked(*args,**kwargs):
-            return [{'value':'requesty_guarded','label':'Requesty (A0 Privacy)'}] if n.enabled() else original(*args,**kwargs)
+            return [{'value':'requesty_guarded','label':'Requesty (A0 Privacy)'}] if m.active() else original(*args,**kwargs)
         return checked
     bind(mc,'get_chat_providers',providers_factory)
     def embedding_providers_factory(original):

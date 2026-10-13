@@ -3,7 +3,7 @@ import {callJsonApi} from '/js/api.js';
 import {toastFrontendError,toastFrontendSuccess} from '/components/notifications/notification-store.js';
 export const store=createStore('privacyAgent',{
     status:null,busy:false,epoch:0,key:'',models:[],loaded:false,
-    main:'',utility:'',vision:'',languages:['en','de'],confirmAll:false,confirmDisable:false,
+    main:'',utility:'',vision:'',languages:['en','de'],confirmAll:false,confirmDisable:false,confirmGatewayOnly:false,
     account:{eu_gateway:false,requesty_zdr:false,provider_zdr:false,approved_eu_models:false},
     preview:null,rows:[],preserveCurrent:true,reviewed:'',backupId:'',confirmUnmasked:false,confirmCleanup:false,
     async cleanupAdapters(){if(!this.confirmCleanup)return;await this.action('cleanup_adapters',{confirmation:'REMOVE_INACTIVE_OWNED_ADAPTERS'});this.confirmCleanup=false;},
@@ -25,7 +25,7 @@ export const store=createStore('privacyAgent',{
     async loadMigration(){await this.action('catalog');await this.action('migration_preview',{preserve_current:this.preserveCurrent});},
     async refreshMigration(){await this.action('migration_preview',{overrides:this.overrides(),preserve_current:this.preserveCurrent});},
     async applyMigration(){if(this.preview&&this.migrationCurrent())await this.action('migration_apply',{fingerprint:this.preview.fingerprint,overrides:this.overrides(),preserve_current:this.preserveCurrent,languages:[...this.languages]});},
-    cleanup(){this.preview=null;this.rows=[];this.reviewed='';this.epoch++;this.key='';this.busy=false;this.models=[];this.loaded=false;this.confirmAll=false;this.confirmDisable=false;this.confirmUnmasked=false;this.confirmCleanup=false;},
+    cleanup(){this.preview=null;this.rows=[];this.reviewed='';this.epoch++;this.key='';this.busy=false;this.models=[];this.loaded=false;this.confirmAll=false;this.confirmDisable=false;this.confirmGatewayOnly=false;this.confirmUnmasked=false;this.confirmCleanup=false;},
     async open(){this.cleanup();await this.action('status');},
     showProviders:false,
     choices(vision=false){
@@ -56,7 +56,7 @@ export const store=createStore('privacyAgent',{
             else{
                 this.status=result;
                 if(action==='migration_apply'){this.backupId=result.receipt?.backup_id||'';this.preview=null;this.rows=[];}
-                if(['status','configure','activate','deactivate'].includes(action)){
+                if(['status','configure','activate','deactivate','gateway_only'].includes(action)){
                     this.main=result.models?.chat?.name||this.main;
                     this.utility=result.models?.utility?.name||this.utility;
                     this.vision=result.models?.vision?.name||this.vision;
@@ -71,5 +71,6 @@ export const store=createStore('privacyAgent',{
     },
     async configure(){if(this.main&&this.utility&&this.vision)await this.action('configure',{configuration:{main:this.main,utility:this.utility,vision:this.vision,languages:[...this.languages]}});},
     async activate(){if(this.confirmAll&&this.configurationCurrent())await this.action('activate',{confirm_all_profiles:true});},
+    async gatewayOnly(){if(this.confirmGatewayOnly){await this.action('gateway_only',{confirmation:'KEEP_GATEWAY_DISABLE_LOCAL_GUARD'});this.confirmGatewayOnly=false;}},
     async deactivate(){if(this.confirmDisable)await this.action('deactivate',{confirmation:'DISABLE_INSTANCE_PROTECTION'});}
 });
