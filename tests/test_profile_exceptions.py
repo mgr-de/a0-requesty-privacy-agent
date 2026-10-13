@@ -84,16 +84,15 @@ def test_memory_mode_and_root_identity_are_isolated(policy, monkeypatch):
     assert inherited['result']==after['result']
 
 
-def test_setup_api_rejects_unconfigured_login_without_creating_grant(policy,monkeypatch):
+def test_setup_api_allows_local_explicit_grant_without_configured_login(policy,monkeypatch):
     p,m,root=policy
     from helpers import login
     from usr.plugins.requesty_privacy_agent.api.setup import Setup
     monkeypatch.setattr(login,'get_credentials_hash',lambda:'')
-    before=p.state()
     for action in ('create-developer-profile','grant','revoke'):
         result=asyncio.run(Setup(None,None).process({'action':action,'profile_id':p.PROFILE,'confirmation':p.CONFIRM},None))
-        assert result['ok'] is False and 'login' in result['error']
-    assert p.state()==before
+        assert result['ok'] is True
+    assert not p.state()['profiles'][p.PROFILE]['grant']
 
 
 def test_new_chat_api_is_empty_and_binds_before_publication(policy,monkeypatch):
@@ -230,15 +229,18 @@ def test_legacy_and_profile_switch_remain_masked(policy):
     assert p.effective(a)['mode'] == 'masked'
 
 
-@pytest.mark.parametrize('authenticated,configured', [(False, True), (True, False), (False, False)])
-def test_operator_login_is_mandatory(policy, monkeypatch, authenticated, configured):
+@pytest.mark.parametrize('authenticated,configured', [(False, True), (True, True), (True, False), (False, False)])
+def test_configured_login_still_requires_authentication(policy, monkeypatch, authenticated, configured):
     p, m, root = policy
     from helpers import login
     from flask import session
     monkeypatch.setattr(login, 'get_credentials_hash', lambda: 'synthetic-session-hash' if configured else '')
     session['authentication'] = 'synthetic-session-hash' if authenticated else ''
     for action in (p.create_profile, lambda: p.grant(p.PROFILE, p.CONFIRM), lambda: p.revoke(p.PROFILE)):
-        with pytest.raises(ValueError, match='login'):
+        if configured and not authenticated:
+            with pytest.raises(ValueError, match='login'):
+                action()
+        else:
             action()
 
 
@@ -277,7 +279,7 @@ def test_imported_claim_and_modified_claim_block(policy):
         p.effective(a)
 
 
-@pytest.mark.parametrize('change', ['edit', 'delete', 'shadow', 'plugin_overlay', 'switch', 'logout_configuration'])
+@pytest.mark.parametrize('change', ['edit', 'delete', 'shadow', 'plugin_overlay', 'switch'])
 def test_identity_changes_block(policy, monkeypatch, change):
     p, m, root = policy
     a = approved(p)
@@ -292,11 +294,19 @@ def test_identity_changes_block(policy, monkeypatch, change):
             {p.PROFILE: SimpleNamespace(path=str(root), origin=['user', 'project'] if change=='shadow' else ['plugin','user'])})
     elif change == 'switch':
         a.config.profile = 'agent0'
-    else:
-        from helpers import login
-        monkeypatch.setattr(login, 'get_credentials_hash', lambda: '')
     with pytest.raises(ValueError):
         p.effective(a)
+
+
+def test_local_chat_policy_independent_of_optional_login_configuration(policy,monkeypatch):
+    p,m,root=policy
+    from helpers import login
+    a=approved(p)
+    expected=p.effective(a)
+    monkeypatch.setattr(login,'get_credentials_hash',lambda:'')
+    assert p.effective(a)==expected
+    p.revoke(p.PROFILE)
+    with pytest.raises(ValueError):p.effective(a)
 
 
 def test_project_change_blocks_and_fresh_binding_is_separate(policy, monkeypatch):

@@ -22,8 +22,10 @@ def require_operator():
     from flask import has_request_context, session
     from helpers import login
     expected = login.get_credentials_hash()
-    if not expected or not has_request_context() or session.get('authentication') != expected:
-        raise ValueError('Configure an Agent Zero login and sign in before managing profile exceptions.')
+    if not has_request_context():
+        raise ValueError('Manage profile exceptions through the native Agent Zero interface.')
+    if expected and session.get('authentication') != expected:
+        raise ValueError('Sign in with the configured Agent Zero login before managing profile exceptions.')
 
 
 def state():
@@ -155,9 +157,6 @@ def effective(agent):
             if claim is not None:
                 raise ValueError('Imported or invalid Developer policy cannot authorize a model call.')
             return {'mode': 'masked', 'secret_guard': True}
-        from helpers import login
-        if not login.get_credentials_hash():
-            raise ValueError(REVOKED)
         if claim != record:
             raise ValueError(REVOKED)
         entry = value['profiles'].get(record['profile_id'])

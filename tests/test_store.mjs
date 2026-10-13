@@ -46,3 +46,12 @@ test('closing resets the full-context Developer confirmation',()=>{
 test('late Developer chat response cannot navigate after settings close',async()=>{
  let resolve;const store=setup(()=>new Promise(r=>resolve=r));const pending=store.createDeveloperChat();store.cleanup();resolve({ok:true,ctxid:'synthetic'});await pending;assert.equal(store.busy,false);
 });
+
+test('optional login is recommended without disabling Developer controls',async()=>{
+ const html=await readFile(new URL('../webui/config.html',import.meta.url),'utf8');
+ assert.match(html,/Anmeldung dringend empfohlen/);
+ assert.match(html,/Ohne Anmeldung kann jeder mit Zugriff/);
+ const disabled=[...html.matchAll(/:disabled="([^"]*)"/g)].map(match=>match[1]);
+ assert.ok(disabled.every(expression=>!expression.includes('login_configured')));
+ assert.match(html,/confirmUnmasked/);
+});
