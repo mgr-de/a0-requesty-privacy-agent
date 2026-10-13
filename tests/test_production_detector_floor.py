@@ -4,7 +4,18 @@ from test_manager import setup
 
 def test_release_requires_fixed_production_detector():
     from usr.plugins.requesty_privacy_agent.helpers.manager import MIN_VERSIONS
-    assert MIN_VERSIONS['local_privacy_guard'] == (1,7,4)
+    assert MIN_VERSIONS['local_privacy_guard'] == (1,8,0)
+
+
+def test_published_dependency_pins_satisfy_component_floor():
+    import json
+    from pathlib import Path
+    from usr.plugins.requesty_privacy_agent.helpers.manager import MIN_VERSIONS
+    manifest = json.loads((Path(__file__).parents[1]/'dependencies.json').read_text())
+    for name, minimum in MIN_VERSIONS.items():
+        entry = manifest[name]
+        assert tuple(int(part) for part in entry['version'].split('.')) >= minimum
+        assert '/v' + entry['version'] + '/' in entry['url']
 
 def test_legacy_evaluation_marker_preserves_floor_and_saved_settings(setup,monkeypatch):
     from types import SimpleNamespace

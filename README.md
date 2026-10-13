@@ -2,7 +2,7 @@
 
 # Requesty Privacy Agent für Agent Zero 2.13
 
-Ein gemeinsamer Einstieg für EU-Privatanwender: Requesty-Routen, lokale Textmaskierung und lokale Embeddings einmal einrichten und als Mindestregeln für **alle Profile dieser Installation** verwenden. Version 0.2 verwendet native A0-Presets und ist keine vollständige Sicherheits-Sandbox.
+Ein gemeinsamer Einstieg für EU-Privatanwender: Requesty-Routen, lokale Textmaskierung und lokale Embeddings einmal einrichten und als Mindestregeln für **alle Profile dieser Installation** verwenden. Version 0.2.8 verlangt Local Privacy Guard 1.8.0 und Requesty 0.6.0, verwendet native A0-Presets und ist keine vollständige Sicherheits-Sandbox.
 
 Die bestehenden [Requesty](https://github.com/mgr-de/a0-requesty-privacy-guard) und [Local Privacy Guard](https://github.com/mgr-de/a0-local-privacy-guard) Plugins bleiben erhalten und einzeln nutzbar. Dieser Manager verwendet ihre Filter und Modellprüfung, statt sie zu kopieren.
 
@@ -27,7 +27,7 @@ Die nummerierten Aktionen speichern und prüfen die Einrichtung. Der allgemeine 
 
 ## Requesty zusätzlich absichern
 
-Empfohlen: **Serving region EU only**, **Requesty Zero data retention**, **Zero-data-retention models only**, geprüfte **EU Approved Models**. Gateway-Region, Requesty-Speicherung und Anbieter-Speicherung sind getrennte Kontrollen. Metadaten bleiben erhalten, und Kontoregeln gelten auch für andere Anwendungen. Gesperrte Regeln können Support erfordern. [Anleitung mit Screenshot](https://github.com/mgr-de/a0-requesty-privacy-guard/blob/ux/private-user-setup/docs/REQUESTY-ACCOUNT-SETTINGS.md).
+Empfohlen: **Serving region EU only**, **Requesty Zero data retention**, **Zero-data-retention models only**, geprüfte **EU Approved Models**. Gateway-Region, Requesty-Speicherung und Anbieter-Speicherung sind getrennte Kontrollen. Metadaten bleiben erhalten, und Kontoregeln gelten auch für andere Anwendungen. Gesperrte Regeln können Support erfordern. [Anleitung mit Screenshot](https://github.com/mgr-de/a0-requesty-privacy-guard/blob/main/docs/REQUESTY-ACCOUNT-SETTINGS.md).
 
 ## Schutzgrenzen
 
@@ -79,3 +79,11 @@ Sicherungen liegen ausschließlich lokal unter usr/privacy-agent/preset-backups.
 Die nativen Speicher- und Auswahladapter werden beim A0-Start eingerichtet, sind reversibel und verändern keine A0-Kerndateien. Direkte API-Eingaben werden ebenfalls geprüft; alte Modellwrapper mit abweichender Modellwahl müssen neu aufgebaut werden. Ohne Manager bleibt das eigenständige Verhalten dieses Plugins erhalten. Bildinhalte und beliebige Werkzeugübertragungen bleiben außerhalb der lokalen Textmaskierung.
 
 New installations require Local Privacy Guard 1.7.4: the optimized spaCy/Regex pipeline is the sole production detector. Backend selection and optional detector installation have been removed. Existing mappings, presets and credentials remain intact. Detector experiments are retained on `archive/cpu-pii-evaluation-2026-10-13` in the companion repositories. Existing installations are updated through the native plugin manager; compatible plugins are not overwritten by dependency setup.
+
+## Code bei der Softwareentwicklung
+
+Local Privacy Guard 1.8.0 erkennt vollständige Python-Ausschnitte sowie konservativ JavaScript/TypeScript. Erkannte Syntax, Bezeichner und numerische Code-Konstanten bleiben erhalten; Kommentare, Zeichenketten und Secrets werden weiter geprüft. Unterstützte Umgebungsreferenzen werden von tatsächlichen Zugangsdaten unterschieden. Unvollständige oder nicht unterstützte Ausschnitte bleiben in der normalen Prüfung. [Verhalten und Grenzen](https://github.com/mgr-de/a0-local-privacy-guard/blob/main/docs/CODE-FILTERING.md).
+
+Es gibt keine pauschale Code-Ausnahme und keinen weiteren Erkennungsbackend. Die Mindestregeln und Requesty-Routen bleiben aktiv. Für eigenständige lokale Modelltests kann Local Privacy Guard ohne aktivierten zentralen Manager genutzt werden; die zentrale Requesty-Einrichtung verlangt weiterhin ihre geprüften Routen.
+
+Die [Prüfung des festen Detektors](docs/SINGLE-DETECTOR-VALIDATION.md) dokumentiert die vorherige Veröffentlichung 0.2.7/1.7.4. Aktuelle Code-Regressionen stehen bei Local Privacy Guard; historische Sprach-/Modellvergleiche bleiben im Archiv-Branch.
