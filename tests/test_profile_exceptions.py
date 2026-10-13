@@ -277,7 +277,7 @@ def test_imported_claim_and_modified_claim_block(policy):
         p.effective(a)
 
 
-@pytest.mark.parametrize('change', ['edit', 'delete', 'shadow', 'switch', 'logout_configuration'])
+@pytest.mark.parametrize('change', ['edit', 'delete', 'shadow', 'plugin_overlay', 'switch', 'logout_configuration'])
 def test_identity_changes_block(policy, monkeypatch, change):
     p, m, root = policy
     a = approved(p)
@@ -286,10 +286,10 @@ def test_identity_changes_block(policy, monkeypatch, change):
     elif change == 'delete':
         (root / 'agent.yaml').unlink()
         root.rmdir()
-    elif change == 'shadow':
+    elif change in {'shadow','plugin_overlay'}:
         from helpers import subagents
         monkeypatch.setattr(subagents, 'get_available_agents_dict', lambda project=None:
-            {p.PROFILE: SimpleNamespace(path=str(root), origin=['user', 'project'])})
+            {p.PROFILE: SimpleNamespace(path=str(root), origin=['user', 'project'] if change=='shadow' else ['plugin','user'])})
     elif change == 'switch':
         a.config.profile = 'agent0'
     else:

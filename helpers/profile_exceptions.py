@@ -47,7 +47,7 @@ def definition(profile_id, project=''):
         raise ValueError('The approved profile no longer exists or is disabled.')
     expected = Path(files.get_abs_path(files.USER_DIR)) / 'agents' / profile_id
     actual = Path(item.path)
-    if actual.is_symlink() or not expected.is_dir() or actual.resolve() != expected.resolve() or 'project' in item.origin:
+    if actual.is_symlink() or not expected.is_dir() or actual.resolve() != expected.resolve() or item.origin != ['user']:
         raise ValueError('The approved profile was replaced or shadowed by a project profile.')
     digest = hashlib.sha256()
     # Bind the actual directory incarnation, not just identical copied content.
