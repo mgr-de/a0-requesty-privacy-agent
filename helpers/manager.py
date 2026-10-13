@@ -11,7 +11,7 @@ import threading
 LOCK=threading.RLock()
 SHARED=('', 'privacy_agent_shared')
 MINIMUM={'region':'eu','strict_region':True,'no_retention':True,'no_training':True,'require_requesty_zdr':False}
-MIN_VERSIONS={'requesty':(0,6,0),'local_privacy_guard':(1,8,1)}
+MIN_VERSIONS={'requesty':(0,6,1),'local_privacy_guard':(1,9,0)}
 
 def directory():
     from helpers import files
@@ -22,7 +22,7 @@ def directory():
     return target
 
 def read(name,default=None):
-    if name not in {'active.json','config.json','setup.json','credentials.json','local.json','account.json'}:
+    if name not in {'active.json','config.json','setup.json','credentials.json','local.json','account.json','profile-exceptions.json'}:
         raise ValueError('Unknown Privacy Agent asset.')
     path=directory()/name
     if not path.exists():return default
@@ -74,7 +74,7 @@ def require_components():
         raise ValueError('Privacy Agent requires compatible Requesty and Local Privacy Guard plugins. Install or restore its components.')
     from usr.plugins.requesty.helpers import runtime_guard
     from usr.plugins.local_privacy_guard.helpers import model_guard
-    if getattr(runtime_guard,'INSTANCE_API_VERSION',None)!=2 or getattr(model_guard,'INSTANCE_API_VERSION',None)!=1:
+    if getattr(runtime_guard,'INSTANCE_API_VERSION',None)!=2 or getattr(model_guard,'INSTANCE_API_VERSION',None)!=2:
         raise ValueError('Restart Agent Zero after updating the privacy components before activating Privacy Agent.')
     if read('setup.json',{}).get('native_presets') and active():
         from . import preset_bridge
@@ -125,6 +125,11 @@ def local_config(agent):
     section['languages']=sorted(set(floor.get('pii_filter',{}).get('languages',['de']))|set(requested)|{'en'})
     result['pii_filter']=section
     result['local_embedding']=deepcopy(floor['local_embedding'])
+    from .profile_exceptions import effective
+    policy=effective(agent)
+    result['_privacy_policy']=policy
+    if policy['mode']=='unmasked':
+        section.update(enabled=False,use_regex=False,use_ner=False,store_mapping=False)
     return result
 
 def mapping_identity(agent):
@@ -167,6 +172,7 @@ def public_status():
     return {'active':active(),'components':components(),'has_key':bool(read('credentials.json',{}).get('key')),
         'models':public_models,'native_presets':setup.get('native_presets',False),'preset_name':setup.get('preset_name'),'local':read('local.json',{}),'account':account,
         'account_verification':account.get('verification','unverified'),
+        'profile_exceptions':__import__(__package__+'.profile_exceptions',fromlist=['public']).public(),
         'policy':read('config.json',MINIMUM),'images':'External images are not protected by text masking.',
         'tools':'Websites, uploads and tool transfers are not comprehensively monitored.'}
 
@@ -370,6 +376,10 @@ def install_legacy_bridge():
     companions continue to perform routing, masking and output restoration.
     """
     from models import LiteLLMChatWrapper
+    from usr.plugins.local_privacy_guard.helpers import transport_admission
+    transport_admission.install()
+    from . import exception_lifecycle
+    exception_lifecycle.install()
     from functools import wraps
     for name in ('_call','_stream','_astream'):
         original=getattr(LiteLLMChatWrapper,name)
@@ -405,6 +415,8 @@ def install_legacy_bridge():
 
 def remove_legacy_bridge():
     from models import LiteLLMChatWrapper
+    from . import exception_lifecycle
+    exception_lifecycle.remove()
     for name,(original,proxy) in list(_LEGACY_BRIDGES.items()):
         if getattr(LiteLLMChatWrapper,name) is proxy:setattr(LiteLLMChatWrapper,name,original)
         del _LEGACY_BRIDGES[name]

@@ -38,3 +38,11 @@ test('migration submit disabled binding returns a boolean for zero blockers',asy
  assert.match(html,/preview\.blocked\.length>0/);
  assert.doesNotMatch(html,/x-model="row\[role\]"/);
 });
+
+test('closing resets the full-context Developer confirmation',()=>{
+ const store=setup(async()=>({ok:true}));store.confirmUnmasked=true;store.cleanup();assert.equal(store.confirmUnmasked,false);
+});
+
+test('late Developer chat response cannot navigate after settings close',async()=>{
+ let resolve;const store=setup(()=>new Promise(r=>resolve=r));const pending=store.createDeveloperChat();store.cleanup();resolve({ok:true,ctxid:'synthetic'});await pending;assert.equal(store.busy,false);
+});
