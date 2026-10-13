@@ -31,6 +31,7 @@ class Setup(ApiHandler):
                         if input.get('confirm_all_profiles') is not True:raise ValueError('Confirm that all existing and future profiles will be affected.')
                         manager.activate()
                     elif command=='deactivate':manager.deactivate(input.get('confirmation'))
+                    elif command=='gateway_only':manager.enable_gateway_only(input.get('confirmation'))
                     elif command=='repair_adapters':manager.repair_adapters()
                     elif command=='cleanup_adapters':manager.cleanup_adapters(input.get('confirmation'))
                     elif command=='account':

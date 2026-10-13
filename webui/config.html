@@ -63,12 +63,15 @@
 <button class="btn" type="button" @click="$store.privacyAgent.action('prepare_local',{languages:[...$store.privacyAgent.languages]})">Lokale Erkennung vorbereiten</button></details>
 </fieldset>
 <fieldset :disabled="$store.privacyAgent.busy"><legend>5 · Installation schützen</legend>
-<p>Alle Profile erben EU-Modellregeln, Secret-Prüfung und lokale Embeddings. PII-Maskierung gilt als Standard; nur ausdrücklich freigegebene neue Developer-Chats erhalten die unten verwaltete Ausnahme. Unzulässige Presets blockieren Modellaufrufe.</p>
+<p x-show="$store.privacyAgent.status?.active && $store.privacyAgent.status?.local_guard_enabled===false"><strong>Gateway-Regeln aktiv · Local Guard aus.</strong> Texte werden ohne PII-Maskierung und ohne die Secret-Prüfung des Local Guard gesendet. Provider-, Preset- und Gateway-Regeln bleiben verpflichtend.</p>
+<label><input type="checkbox" x-model="$store.privacyAgent.confirmGatewayOnly"> Local Guard ausschalten; Text ohne PII- und Secret-Prüfung senden. Gateway-Regeln bleiben aktiv.</label>
+<button class="btn" type="button" @click="$store.privacyAgent.gatewayOnly()" :disabled="!$store.privacyAgent.confirmGatewayOnly || ($store.privacyAgent.status?.active && $store.privacyAgent.status?.local_guard_enabled===false)">Gateway aktiv lassen · Local Guard deaktivieren</button>
+<p x-show="$store.privacyAgent.status?.local_guard_enabled!==false">Alle Profile erben EU-Modellregeln, Secret-Prüfung und lokale Embeddings. PII-Maskierung gilt als Standard; nur ausdrücklich freigegebene neue Developer-Chats erhalten die unten verwaltete Ausnahme. Unzulässige Presets blockieren Modellaufrufe.</p>
 <label><input type="checkbox" x-model="$store.privacyAgent.confirmAll"> Ich möchte alle bestehenden und künftigen Profile dieser Installation schützen.</label>
 <button class="btn" type="button" @click="$store.privacyAgent.activate()" :disabled="!$store.privacyAgent.confirmAll || !$store.privacyAgent.configurationCurrent() || $store.privacyAgent.status?.active">Diese Installation schützen</button>
 <p x-show="!$store.privacyAgent.configurationCurrent()">Native Presets zuerst prüfen und mit Sicherung übernehmen. Erst anschließend den installationsweiten Schutz aktivieren.</p>
 </fieldset>
-<fieldset :disabled="$store.privacyAgent.busy"><legend>Developer ohne PII-Maskierung</legend>
+<fieldset x-show="$store.privacyAgent.status?.local_guard_enabled!==false" :disabled="$store.privacyAgent.busy || $store.privacyAgent.status?.local_guard_enabled===false"><legend>Developer ohne PII-Maskierung</legend>
 <p>Nur neu hier angelegte Developer-Chats senden den gesamten Modellkontext einschließlich Memory und Unteragenten ohne PII-Maskierung. Secrets, Requesty-Regeln und lokale Embeddings bleiben geprüft. Bestehende Chats bleiben maskiert.</p>
 <p><strong>Anmeldung dringend empfohlen:</strong> Für eine lokale Installation ohne externen Zugang sind Benutzername und Passwort optional. Ohne Anmeldung kann jeder mit Zugriff auf diese Oberfläche Profilausnahmen verwalten. Bei Zugriff durch andere Personen oder aus dem Netzwerk unbedingt Anmeldung einrichten und den Zugang absichern. Eine eingerichtete Anmeldung bleibt verpflichtend.</p>
 <button class="btn" type="button" @click="$store.privacyAgent.action('create-developer-profile')" :disabled="!$store.privacyAgent.status?.active">Eigenes Developer-Profil anlegen</button>

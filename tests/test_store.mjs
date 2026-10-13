@@ -66,3 +66,15 @@ test('inactive owned cleanup requires explicit consent and never toggles policy'
  const html=await readFile(new URL('../webui/config.html',import.meta.url),'utf8');
  assert.match(html,/activation_state==='broken'/);assert.match(html,/manager_adapters/);
 });
+
+
+test('Gateway-only requires separate consent and labels text checks disabled',async()=>{
+ const calls=[];const store=setup(async(path,input)=>{calls.push(input);return {ok:true,active:true,local_guard_enabled:false};});
+ await store.gatewayOnly();assert.equal(calls.length,0);
+ store.confirmGatewayOnly=true;await store.gatewayOnly();
+ assert.equal(calls[0].action,'gateway_only');assert.equal(calls[0].confirmation,'KEEP_GATEWAY_DISABLE_LOCAL_GUARD');
+ assert.equal(store.status.active,true);assert.equal(store.status.local_guard_enabled,false);assert.equal(store.confirmGatewayOnly,false);
+ store.confirmGatewayOnly=true;store.cleanup();assert.equal(store.confirmGatewayOnly,false);
+ const html=await readFile(new URL('../webui/config.html',import.meta.url),'utf8');
+ assert.match(html,/Gateway-Regeln aktiv · Local Guard aus/);assert.match(html,/confirmGatewayOnly/);
+});

@@ -264,3 +264,39 @@ def test_native_presets_and_dynamic_profile_lifecycle_share_owned_api(native):
         exception_lifecycle.install()
         assert preset_bridge.healthy()
     finally:exception_lifecycle.remove()
+
+
+
+def test_gateway_only_keeps_native_defaults_provider_lock_and_chat_selection(native,monkeypatch):
+    m,path,available=native
+    m.write('mode.json',{'local_guard_enabled':False})
+    monkeypatch.setattr(m,'filter_check',lambda *a:pytest.fail('Gateway-only must not require NER'))
+    migrate(native)
+    assert [p['name'] for p in mc.get_presets()]==['Default','Efficiency','Power']
+    assert [p['value'] for p in mc.get_chat_providers()]==['requesty_guarded']
+    presets=mc.get_presets();presets[0]['chat']['provider']='openrouter'
+    with pytest.raises(ValueError):mc.save_presets(presets)
+    from agent import Agent,AgentConfig
+    from plugins._model_config.api.model_override import ModelOverride
+    import asyncio
+    a=Agent(0,AgentConfig(profile='agent0',mcp_servers=''))
+    wrapper=a.get_chat_model()
+    assert not hasattr(wrapper,'_privacy_inner')
+    assert wrapper._requesty_agent() is a
+    assert wrapper.model_name=='openai/'+mc.resolve_preset('Default')['chat']['name']
+    result=asyncio.run(ModelOverride(None,None).process({'context_id':a.context.id,'action':'set','override':{'provider':'openrouter','name':'unsafe'}},None))
+    assert result.status_code==400
+    from usr.plugins.local_privacy_guard.helpers import instance
+    assert instance.manager() is None
+    import models
+    from unittest.mock import patch
+    observed=[]
+    source='Synthetic contact Anna Weber anna@example.com'
+    async def complete(transport):
+        observed.append(source in str(transport.messages))
+        return {'response_delta':source,'reasoning_delta':''}
+    with patch.object(models.LiteLLMTransport,'acomplete',complete):
+        response,_=asyncio.run(wrapper.unified_call(user_message=source))
+    assert response==source and observed==[True]
+    a.context.set_data('chat_model_override',{'preset_name':'Efficiency'})
+    assert a.get_chat_model().model_name=='openai/'+mc.resolve_preset('Efficiency')['chat']['name']

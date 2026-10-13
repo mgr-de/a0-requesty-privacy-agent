@@ -22,7 +22,7 @@ def directory():
     return target
 
 def read(name,default=None):
-    if name not in {'active.json','config.json','setup.json','credentials.json','local.json','account.json','profile-exceptions.json','activation-record.json'}:
+    if name not in {'active.json','config.json','setup.json','credentials.json','local.json','account.json','profile-exceptions.json','activation-record.json','mode.json'}:
         raise ValueError('Unknown Privacy Agent asset.')
     path=directory()/name
     if not path.exists():return default
@@ -70,21 +70,33 @@ def components():
         result[name]={'installed':path.is_file(),'compatible':compatible,'version':'.'.join(map(str,version))}
     return result
 
+def local_guard_enabled():
+    value=read('mode.json',{}).get('local_guard_enabled',True)
+    if type(value) is not bool:
+        raise ValueError('Invalid text protection mode. Restore the operator-owned mode file.')
+    return value
+
+
 def require_components():
-    if not all(item['compatible'] for item in components().values()):
-        raise ValueError('Privacy Agent requires compatible A0 Privacy Suite Model Gateway and Local Guard plugins. Install or restore its components.')
+    required={'requesty'} | ({'local_privacy_guard'} if local_guard_enabled() else set())
+    if not all(item['compatible'] for name,item in components().items() if name in required):
+        raise ValueError('Privacy Agent requires compatible enabled components. Install or restore its components.')
     if active():
         from .adapters import integrity
         if not integrity(directory().parent)['intact']:
             raise ValueError('Privacy Agent adapters are incomplete or changed. Use the central adapter repair or restore trusted files; model calls remain blocked.')
     from usr.plugins.requesty.helpers import runtime_guard
-    from usr.plugins.local_privacy_guard.helpers import model_guard
-    if getattr(runtime_guard,'INSTANCE_API_VERSION',None)!=2 or getattr(model_guard,'INSTANCE_API_VERSION',None)!=2:
+    if getattr(runtime_guard,'INSTANCE_API_VERSION',None)!=2:
         raise ValueError('Restart Agent Zero after updating the privacy components before activating Privacy Agent.')
-    if read('setup.json',{}).get('native_presets') and active():
+    if local_guard_enabled():
+        from usr.plugins.local_privacy_guard.helpers import model_guard
+        if getattr(model_guard,'INSTANCE_API_VERSION',None)!=2:
+            raise ValueError('Restart Agent Zero after updating the privacy components before activating Privacy Agent.')
+    if active():
         from . import preset_bridge
         preset_bridge.install()
         if not preset_bridge.healthy():raise ValueError('Restore the native preset validation bridge before using external models.')
+
 
 def effective_policy(profile=None):
     from usr.plugins.requesty.helpers.policy import Policy
@@ -106,6 +118,7 @@ def requesty_owner(agent):
     return candidate if setup and setup.get('active') else SHARED
 
 def local_config(agent):
+    if not local_guard_enabled():return None
     from helpers import plugins,projects
     from usr.plugins.local_privacy_guard.helpers.agent_scope import selected_path
     floor=deepcopy(read('local.json') or plugins.get_default_plugin_config('local_privacy_guard'))
@@ -172,19 +185,21 @@ def public_status():
     except ValueError as error:state='broken';state_error=str(error)
     adapters=integrity(directory().parent)
     component_status=components()
+    required={'requesty'} | ({'local_privacy_guard'} if local_guard_enabled() else set())
+    compatible=all(c['compatible'] for name,c in component_status.items() if name in required)
     from helpers import plugins
     diagnostics={'activation_state':state,'activation_error':state_error,
         'manager_enabled':'requesty_privacy_agent' in plugins.get_enabled_plugins(None),
-        'manager_adapters':adapters,'components_compatible':all(c['compatible'] for c in component_status.values()),'repair_required':state=='broken' or (state=='active' and (not adapters['intact'] or not all(c['compatible'] for c in component_status.values())))}
+        'manager_adapters':adapters,'components_compatible':compatible,'repair_required':state=='broken' or (state=='active' and (not adapters['intact'] or not compatible))}
     setup=read('setup.json',{})
-    if setup.get('native_presets') and state!='broken' and (state!='active' or adapters['intact']) and all(c['compatible'] for c in component_status.values()):
+    if setup.get('native_presets') and state!='broken' and (state!='active' or adapters['intact']) and compatible:
         from plugins._model_config.helpers import model_config as mc
         config=mc.get_config()
         setup={**setup,'preset_name':mc.get_configured_preset_name(),'models':{slot:config.get(section,{}) for slot,section in [('chat','chat_model'),('utility','utility_model'),('vision','vision_model')]}}
     account=read('account.json',{})
     public_models={slot:{field:conf.get(field) for field in ('provider','name','api_base','ctx_length','vision','override_main') if field in conf}
                    for slot,conf in setup.get('models',{}).items() if slot in {'chat','utility','vision'} and isinstance(conf,dict)}
-    return {'active':state=='active','diagnostics':diagnostics,'components':component_status,'has_key':bool(read('credentials.json',{}).get('key')),
+    return {'local_guard_enabled':local_guard_enabled(),'active':state=='active','diagnostics':diagnostics,'components':component_status,'has_key':bool(read('credentials.json',{}).get('key')),
         'models':public_models,'native_presets':setup.get('native_presets',False),'preset_name':setup.get('preset_name'),'local':read('local.json',{}),'account':account,
         'account_verification':account.get('verification','unverified'),
         'profile_exceptions':__import__(__package__+'.profile_exceptions',fromlist=['public']).public(),
@@ -282,7 +297,7 @@ def activate():
     setup=read('setup.json',{})
     local=read('local.json',{})
     if not setup.get('active') or not local:raise ValueError('Complete the common setup first.')
-    filter_check(local)
+    if local_guard_enabled():filter_check(local)
     from usr.plugins.requesty.helpers.policy import Policy
     from usr.plugins.requesty.helpers.catalog import fetch
     key=read('credentials.json',{}).get('key')
@@ -317,9 +332,23 @@ def activate():
             mapping_identity(context.agent0);save_tmp_chat(context)
     write('activation-record.json',{'schema':1,'managed':True})
     write('active.json',{'active':True,'activated_at':datetime.now(timezone.utc).isoformat(),'api_version':1})
-    if setup.get('native_presets'):
-        from . import preset_bridge
-        preset_bridge.install()
+    from . import preset_bridge
+    preset_bridge.install()
+
+def enable_gateway_only(confirmation):
+    if confirmation!='KEEP_GATEWAY_DISABLE_LOCAL_GUARD':raise ValueError('Confirm unmasked text with the central Gateway still active.')
+    from agent import AgentContext
+    if any(context.is_running() for context in AgentContext.all()):raise ValueError('Wait until running chats finish before changing protection mode.')
+    write('mode.json',{'local_guard_enabled':False})
+    from helpers import plugins,cache
+    # Install updated owned adapters before enabling their central enforcement.
+    repair_adapters()
+    if not active():plugins.toggle_plugin('local_privacy_guard',False,clear_overrides=True)
+    activate()
+    plugins.toggle_plugin('local_privacy_guard',False,clear_overrides=True)
+    cache.clear_all()
+    from . import preset_bridge
+    preset_bridge.install()
 
 def deactivate(confirmation):
     if confirmation!='DISABLE_INSTANCE_PROTECTION':raise ValueError('Confirm that all profiles lose the instance minimum rules.')
@@ -350,22 +379,29 @@ def apply_model_config(data,agent):
     # supplied where no profile sidecar exists; runtime checks reject conflicts.
     if owner==SHARED or not result.get('vision_model'):
         result['vision_model']=deepcopy(read('setup.json')['models']['vision'])
+    if not local_guard_enabled():
+        from .native_presets import embedding
+        result['embedding_model']=embedding()
     data['result']=result
 
 def enforce_call(data,method):
     if not active():return
     from .profile_exceptions import require_model_transport
-    require_model_transport()
+    if local_guard_enabled():require_model_transport()
     require_components()
     from usr.plugins.requesty.helpers.runtime_guard import guard_function,is_local_route
     from usr.plugins.requesty.helpers.call_context import tool_agent
-    from usr.plugins.local_privacy_guard.helpers.model_guard import tool_agent as filter_owner,filtered_call
     wrapper=data['args'][0]
+    if local_guard_enabled():
+        from usr.plugins.local_privacy_guard.helpers.model_guard import tool_agent as filter_owner,filtered_call
+        proof=filtered_call.get()
+        filtered_owner=proof[1] if proof and proof[0] is wrapper else None
+        owner=tool_agent.get() or filter_owner.get() or filtered_owner
+    else:
+        reference=getattr(wrapper,'_requesty_agent',None)
+        owner=tool_agent.get() or (reference() if reference else None)
     if read('setup.json',{}).get('native_presets') and is_local_route(wrapper,{**wrapper.kwargs,**data.get('kwargs',{})}):
         raise ValueError('Main, Utility and Vision must use Requesty while Privacy Agent is active.')
-    proof=filtered_call.get()
-    filtered_owner=proof[1] if proof and proof[0] is wrapper else None
-    owner=tool_agent.get() or filter_owner.get() or filtered_owner
     bound=getattr(wrapper,'_requesty_policy_bound',False)
     if owner is None:
         # No chat identity means no safe mapping/attribution. Never send such an
@@ -413,10 +449,11 @@ def install_legacy_bridge():
                 install()
                 _ADAPTERS_READY=True
     from models import LiteLLMChatWrapper
-    from usr.plugins.local_privacy_guard.helpers import transport_admission
-    transport_admission.install()
-    from . import exception_lifecycle
-    exception_lifecycle.install()
+    if local_guard_enabled():
+        from usr.plugins.local_privacy_guard.helpers import transport_admission
+        transport_admission.install()
+        from . import exception_lifecycle
+        exception_lifecycle.install()
     from functools import wraps
     for name in ('_call','_stream','_astream'):
         original=getattr(LiteLLMChatWrapper,name)
@@ -426,10 +463,17 @@ def install_legacy_bridge():
             def checked(wrapper,*args,**kwargs):
                 if active():
                     from .profile_exceptions import require_model_transport
-                    require_model_transport()
+                    if local_guard_enabled():require_model_transport()
                     require_components()
-                    from usr.plugins.local_privacy_guard.helpers.model_guard import filtered_call,is_local
-                    proof=filtered_call.get()
+                    from usr.plugins.requesty.helpers.runtime_guard import is_local_route
+                    is_local=lambda wrapper,kwargs:is_local_route(wrapper,{**wrapper.kwargs,**kwargs})
+                    if local_guard_enabled():
+                        from usr.plugins.local_privacy_guard.helpers.model_guard import filtered_call
+                        proof=filtered_call.get()
+                    else:
+                        reference=getattr(wrapper,'_requesty_agent',None)
+                        owner=reference() if reference else None
+                        proof=(wrapper,owner) if owner is not None else None
                     if read('setup.json',{}).get('native_presets') and is_local(wrapper,kwargs):raise ValueError('Privacy Agent requires Requesty for chat models.')
                     if not is_local(wrapper,kwargs):
                         if not proof or proof[0] is not wrapper:
