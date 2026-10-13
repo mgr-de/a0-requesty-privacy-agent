@@ -482,3 +482,23 @@ def test_revocation_after_preparation_before_dispatch_has_no_provider_call(polic
             asyncio.run(delayed())
     finally:
         t.receipt.reset(token)
+
+
+def test_dynamic_http_handler_profile_switch_permanently_blocks(policy):
+    p,m,root=policy
+    from usr.plugins.requesty_privacy_agent.helpers import exception_lifecycle
+    from helpers.api import ApiHandler
+    from flask import Flask,request
+    a=approved(p)
+    class DynamicallyLoadedProfileHandler(ApiHandler):
+        async def process(self,input,request):
+            a.config.profile=input['agent_profile']
+            return {'ok':True,'agent_profile':a.config.profile}
+    exception_lifecycle.install()
+    app=Flask(__name__)
+    for profile in ('agent0',p.PROFILE):
+        with app.test_request_context('/api/agent_profile_set',json={'context_id':a.context.id,'agent_profile':profile}):
+            response=asyncio.run(DynamicallyLoadedProfileHandler(None,None).handle_request(request))
+            assert response.status_code==200
+    assert p.state()['chats'][a.context.id]['blocked'] is True
+    with pytest.raises(ValueError):p.effective(a)

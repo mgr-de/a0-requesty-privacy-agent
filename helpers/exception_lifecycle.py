@@ -39,6 +39,24 @@ def install():
             return result
         return changed
     attach(SetAgentProfile,'process',profile_change)
+    # Builtin API handlers are loaded dynamically. Their common base is stable,
+    # so this boundary also covers the actual HTTP handler class and cache.
+    from helpers.api import ApiHandler
+    def profile_request(previous):
+        @wraps(previous)
+        async def handled(handler,request):
+            result=await previous(handler,request)
+            if manager.active() and request.path.rstrip('/').endswith('/agent_profile_set') and result.status_code==200:
+                output=result.get_json(silent=True)
+                if isinstance(output,dict) and output.get('ok'):
+                    input=request.get_json(silent=True) or {}
+                    context_id=str(input.get('context_id','') or '').strip()
+                    record=policy.state()['chats'].get(context_id)
+                    if record and output.get('agent_profile')!=record['profile_id']:
+                        block(context_id)
+            return result
+        return handled
+    attach(ApiHandler,'handle_request',profile_request)
     def chat_remove(previous):
         @wraps(previous)
         async def removed(handler,input,request):

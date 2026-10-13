@@ -11,7 +11,7 @@ import threading
 LOCK=threading.RLock()
 SHARED=('', 'privacy_agent_shared')
 MINIMUM={'region':'eu','strict_region':True,'no_retention':True,'no_training':True,'require_requesty_zdr':False}
-MIN_VERSIONS={'requesty':(0,9,0),'local_privacy_guard':(0,9,0)}
+MIN_VERSIONS={'requesty':(0,9,1),'local_privacy_guard':(0,9,1)}
 
 def directory():
     from helpers import files
