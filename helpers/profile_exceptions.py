@@ -4,6 +4,7 @@ Host filesystem administrators remain outside this boundary. Definition edits
 invalidate grants deliberately; callers must explicitly grant a new generation.
 """
 from copy import deepcopy
+from contextvars import ContextVar
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -16,6 +17,7 @@ PROFILE = 'developer-privacy'
 CLAIM = 'privacy_agent_chat_policy'
 CONFIRM = 'ALLOW_UNMASKED_CONTEXT_AND_SUBAGENTS'
 REVOKED = 'Developer permission changed. Start a new protected chat.'
+deleting_chat = ContextVar('privacy_native_deleting_chat',default=None)
 
 
 def require_operator():
@@ -149,6 +151,12 @@ def root(agent):
 def effective(agent):
     owner = root(agent)
     context = owner.context
+    # Native removal resets the agent before removing its context. Permit only
+    # masked initialization inside this internal deletion scope; other tasks
+    # keep the original revoked policy and cannot dispatch unmasked calls.
+    deletion=deleting_chat.get()
+    if deletion and deletion.get('active') and deletion.get('root_id',deletion['context_id'])==context.id:
+        return {'mode':'masked','secret_guard':True}
     claim = context.get_data(CLAIM)
     with manager.LOCK:
         value = state()
@@ -207,3 +215,9 @@ def public():
             valid = False
         profiles.append({'id': key, 'granted': bool(entry.get('grant')) and valid, 'definition_valid': valid})
     return {'login_configured': bool(login.get_credentials_hash()), 'profiles': profiles}
+
+
+def require_model_transport():
+    deletion=deleting_chat.get()
+    if deletion and deletion.get('active'):
+        raise ValueError('Model calls are not allowed during chat deletion.')
