@@ -300,3 +300,69 @@ def test_gateway_only_keeps_native_defaults_provider_lock_and_chat_selection(nat
     assert response==source and observed==[True]
     a.context.set_data('chat_model_override',{'preset_name':'Efficiency'})
     assert a.get_chat_model().model_name=='openai/'+mc.resolve_preset('Efficiency')['chat']['name']
+
+
+
+@pytest.mark.parametrize('local_guard',[False,True])
+@pytest.mark.parametrize('shared_context',[False,True])
+def test_subagent_preset_is_checked_against_getter_agent_not_parent_tool(native,local_guard,shared_context):
+    m,path,available=native
+    m.write('mode.json',{'local_guard_enabled':local_guard})
+    migrate(native)
+    from agent import Agent,AgentConfig
+    from usr.plugins.requesty.helpers.runtime_guard import guarded_kwargs
+    from usr.plugins.requesty.helpers.call_context import tool_agent,owner
+    parent=Agent(0,AgentConfig(profile='agent0',mcp_servers=''))
+    from helpers import plugins
+    plugins.save_plugin_config('_model_config','','developer',{'model_preset':'Power'})
+    child=Agent(1,AgentConfig(profile='developer',mcp_servers=''),context=parent.context if shared_context else None)
+    if not shared_context:child.context.set_output_data('parent_context_id',parent.context.id)
+    wrapper=child.get_chat_model()
+    while hasattr(wrapper,'_privacy_inner'):wrapper=wrapper._privacy_inner
+    assert wrapper._requesty_agent() is child
+    assert wrapper._requesty_scope==owner(parent)
+    token=tool_agent.set(parent)
+    try:
+        assert guarded_kwargs(wrapper,{})['api_base']=='https://router.eu.requesty.ai/v1'
+        if not local_guard:
+            import models,asyncio
+            from unittest.mock import patch
+            observed=[]
+            async def complete(transport):
+                observed.append(transport.model)
+                return {'response_delta':'synthetic subordinate answer','reasoning_delta':''}
+            with patch.object(models.LiteLLMTransport,'acomplete',complete):
+                result=asyncio.run(wrapper.unified_turn(user_message='synthetic subordinate'))
+            assert result.response=='synthetic subordinate answer'
+            assert len(observed)==1 and observed[0].endswith(mc.resolve_preset('Power')['chat']['name'])
+        child.context.set_data('chat_model_override',{'preset_name':'Efficiency'})
+        with pytest.raises(ValueError,match='preset changed'):guarded_kwargs(wrapper,{})
+        fresh=child.get_chat_model()
+        while hasattr(fresh,'_privacy_inner'):fresh=fresh._privacy_inner
+        assert guarded_kwargs(fresh,{})['api_base']=='https://router.eu.requesty.ai/v1'
+    finally:tool_agent.reset(token)
+
+
+def test_gateway_only_detects_changed_preset_without_parent_tool_context(native):
+    m,path,available=native
+    m.write('mode.json',{'local_guard_enabled':False});migrate(native)
+    from agent import Agent,AgentConfig
+    from usr.plugins.requesty.helpers.runtime_guard import guarded_kwargs
+    a=Agent(0,AgentConfig(profile='agent0',mcp_servers=''));wrapper=a.get_chat_model()
+    a.context.set_data('chat_model_override',{'preset_name':'Power'})
+    with pytest.raises(ValueError,match='preset changed'):guarded_kwargs(wrapper,{})
+
+
+
+def test_expired_model_owner_does_not_fall_back_to_parent_tool(native):
+    m,path,available=native
+    m.write('mode.json',{'local_guard_enabled':False});migrate(native)
+    from agent import Agent,AgentConfig
+    from usr.plugins.requesty.helpers.runtime_guard import guarded_kwargs
+    from usr.plugins.requesty.helpers.call_context import tool_agent
+    a=Agent(0,AgentConfig(profile='agent0',mcp_servers=''));wrapper=a.get_chat_model()
+    wrapper._requesty_agent=lambda:None
+    token=tool_agent.set(a)
+    try:
+        with pytest.raises(ValueError,match='owner is unavailable'):guarded_kwargs(wrapper,{})
+    finally:tool_agent.reset(token)
